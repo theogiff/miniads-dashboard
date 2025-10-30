@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Miniads — Dashboard Client</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+  <div id="clientContainer" class="client-container">
+    <aside class="client-sidebar">
+      <div class="client-sidebar-inner">
+        <div class="client-sidebar-brand">
+          <img src="./logo.svg" alt="Miniads" class="client-sidebar-logo" />
+          <div class="client-sidebar-meta">
+            <span class="client-sidebar-title">Miniads</span>
+            <span class="client-sidebar-subtitle" id="clientBadgeFallback">Espace client</span>
+          </div>
+        </div>
+        <nav class="client-sidebar-nav">
+          <button type="button" class="client-nav-link active">
+            <span class="client-nav-label">Tableau de bord</span>
+            <span class="client-nav-pill">Actif</span>
+          </button>
+          <button type="button" class="client-nav-link">
+            <span class="client-nav-label">Commandes</span>
+          </button>
+          <button type="button" class="client-nav-link">
+            <span class="client-nav-label">Support</span>
+          </button>
+        </nav>
+        <div class="client-sidebar-footer">
+          <p class="client-sidebar-help">Besoin d’aide ? contact@miniads.fr</p>
+        </div>
+      </div>
+    </aside>
+
+    <div class="client-main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-context">
+            <span class="crumb">Dashboard</span>
+            <div class="topbar-heading">
+              <h1 id="clientTitle">Suivi de vos miniatures</h1>
+              <p class="topbar-subtitle" id="clientGreeting">Retrouvez l’historique complet de vos demandes et leurs statuts.</p>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span class="topbar-name hidden" id="clientBadge"></span>
+        </div>
+      </header>
+
+      <main class="container client-content">
+        <section class="hero">
+          <div class="hero-header">
+            <div class="hero-pill-group">
+              <span class="hero-pill hero-pill-primary">Espace client</span>
+              <span class="hero-pill hero-pill-neutral" id="heroDate">Aujourd’hui</span>
+            </div>
+            <div class="hero-snapshot-head">
+              <span class="hero-snapshot-badge">Synthèse</span>
+              <span class="hero-snapshot-meta">Vos chiffres clés</span>
+            </div>
+          </div>
+          <div class="hero-kpi-grid">
+            <article class="hero-card">
+              <div class="hero-card-icon hero-card-icon-total" aria-hidden="true"></div>
+              <div class="hero-card-label">Miniatures totales</div>
+              <div class="hero-card-value" id="totalThumbs">—</div>
+            </article>
+            <article class="hero-card">
+              <div class="hero-card-icon hero-card-icon-month" aria-hidden="true"></div>
+              <div class="hero-card-label">Livrées ce mois</div>
+              <div class="hero-card-value" id="deliveredThisMonth">—</div>
+            </article>
+            <article class="hero-card">
+              <div class="hero-card-icon hero-card-icon-last" aria-hidden="true"></div>
+              <div class="hero-card-label">Dernière livraison</div>
+              <div class="hero-card-value" id="lastDelivered">—</div>
+            </article>
+          </div>
+        </section>
+
+        <div id="clientTableHost" class="table-host"></div>
+      </main>
+    </div>
+  </div>
+
+  <div id="adminLayout" class="admin-layout admin-hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="./logoadmin.svg" alt="Miniads Admin" class="sidebar-logo" />
+        <small>Admin</small>
+      </div>
+      <nav class="sidebar-nav">
+        <button type="button" class="sidebar-link active" data-admin-view="dashboard">Dashboard</button>
+        <button type="button" class="sidebar-link" data-admin-view="clients">Mes clients</button>
+        <button type="button" class="sidebar-link" data-admin-view="extension">Extension YouTube</button>
+      </nav>
+    </aside>
+
+    <div class="admin-main">
+      <header class="admin-header">
+        <div>
+          <h1 id="adminTopTitle">Dashboard</h1>
+          <p id="adminTopSubtitle">Suivi en temps réel de l’activité Miniads.</p>
+        </div>
+        <div class="admin-meta">
+          <span class="admin-user-pill">Miniads Admin</span>
+          <span class="admin-active-chip" id="adminActiveClient">—</span>
+        </div>
+      </header>
+
+      <section class="admin-view active" id="adminDashboardView">
+        <div class="admin-dashboard-header">
+          <p class="admin-period-label" id="adminPeriodLabel">Vue sur les 12 derniers mois</p>
+          <div class="admin-filters">
+            <div class="filter-chips" id="adminFilterChips">
+              <button type="button" class="filter-chip" data-admin-range="30d">30 derniers jours</button>
+              <button type="button" class="filter-chip" data-admin-range="6m">6 derniers mois</button>
+              <button type="button" class="filter-chip active" data-admin-range="12m">12 derniers mois</button>
+              <button type="button" class="filter-chip" data-admin-range="custom">Personnalisé</button>
+            </div>
+            <div class="filter-custom">
+              <label>Du
+                <input type="date" id="adminStartDate" />
+              </label>
+              <label>Au
+                <input type="date" id="adminEndDate" />
+              </label>
+              <button type="button" id="adminApplyCustom">Appliquer</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-kpi-strip">
+          <article class="kpi-summary">
+            <span class="kpi-summary-label">CA total</span>
+            <span class="kpi-summary-value" id="adminKpiRevenue">—</span>
+          </article>
+          <article class="kpi-summary">
+            <span class="kpi-summary-label">Clients actifs</span>
+            <span class="kpi-summary-value" id="adminKpiClients">—</span>
+          </article>
+          <article class="kpi-summary">
+            <span class="kpi-summary-label">Panier moyen</span>
+            <span class="kpi-summary-value" id="adminKpiAverageBasket">—</span>
+          </article>
+          <article class="kpi-summary">
+            <span class="kpi-summary-label">% nouveaux clients</span>
+            <span class="kpi-summary-value" id="adminKpiNewClientRate">—</span>
+          </article>
+          <article class="kpi-summary">
+            <span class="kpi-summary-label">% clients actifs</span>
+            <span class="kpi-summary-value" id="adminKpiActiveRate">—</span>
+            <small class="kpi-mini" id="adminKpiActiveTooltip">—</small>
+          </article>
+          <article class="kpi-summary">
+            <span class="kpi-summary-label">Commandes / client</span>
+            <span class="kpi-summary-value" id="adminKpiOrdersPerClient">—</span>
+          </article>
+          <article class="kpi-summary">
+            <span class="kpi-summary-label">CLTV moyenne</span>
+            <span class="kpi-summary-value" id="adminKpiCltv">—</span>
+          </article>
+        </div>
+
+        <div class="admin-charts-grid">
+          <div class="chart-card chart-span-2">
+            <div class="chart-head">
+              <div>
+                <h3>Chiffre d’affaires par mois</h3>
+                <p class="chart-meta">Barres + moyenne mobile (3 mois)</p>
+              </div>
+              <span class="chart-status" id="adminRevenueChartStatus">—</span>
+            </div>
+            <canvas id="adminRevenueChart" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-head">
+              <div>
+                <h3>Évolution des clients</h3>
+                <p class="chart-meta">Total cumulé de clients</p>
+              </div>
+              <span class="chart-status" id="adminClientsChartStatus">—</span>
+            </div>
+            <canvas id="adminClientsChart" height="200"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-head">
+              <div>
+                <h3>Nouveaux vs existants</h3>
+                <p class="chart-meta">Ratio clients de la période</p>
+              </div>
+              <span class="chart-status" id="adminRatioChartStatus">—</span>
+            </div>
+            <canvas id="adminRatioChart" height="200"></canvas>
+          </div>
+          <div class="chart-card chart-span-2">
+            <div class="chart-head">
+              <div>
+                <h3>Rétention clients</h3>
+                <p class="chart-meta">Retour après 1, 3, 6 et 12 mois</p>
+              </div>
+              <span class="chart-status" id="adminRetentionChartStatus">—</span>
+            </div>
+            <canvas id="adminRetentionChart" height="220"></canvas>
+          </div>
+        </div>
+
+        <p class="admin-dashboard-empty hidden" id="adminDashboardEmpty">Aucun enregistrement pour la période sélectionnée.</p>
+      </section>
+
+      <section class="admin-view" id="adminPanel">
+        <div class="admin-clients-head">
+          <div>
+            <h2>Mes clients</h2>
+            <p>Pilote chaque dashboard client et copie leur lien sécurisé.</p>
+          </div>
+          <div class="admin-clients-actions">
+            <input id="clientSearch" type="search" placeholder="Rechercher un client…" autocomplete="off" />
+          </div>
+        </div>
+        <div id="clientList" class="client-list"></div>
+        <div class="share-box" id="shareBox">
+          <label>URL à partager
+            <div class="share-input">
+              <input id="shareLink" type="url" readonly />
+              <button type="button" id="copyShareLink">Copier</button>
+            </div>
+          </label>
+          <small id="shareHint"></small>
+        </div>
+        <div id="adminTableHost" class="table-host"></div>
+      </section>
+
+      <section class="admin-view" id="adminExtensionView">
+        <div class="extension-card card">
+          <h2>Extension YouTube</h2>
+          <p>Installe l’extension Miniads pour prévisualiser automatiquement les visuels directement dans YouTube Studio.</p>
+          <ul class="panel-list">
+            <li>Code source local : <code>youtube-preview/</code></li>
+            <li>Chrome ➝ Extensions ➝ Mode développeur ➝ Charger l’extension non empaquetée.</li>
+            <li>Sur YouTube Studio, les miniatures apparaissent au survol des vidéos.</li>
+          </ul>
+          <a class="btn-secondary" href="./youtube-preview/README.MD" target="_blank" rel="noopener">Ouvrir la documentation</a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="sharedTable">
+    <section class="table-section" id="tableSection">
+      <h2 id="summaryTitle">Votre suivi - Miniatures</h2>
+      <div class="table-wrapper">
+        <table class="summary">
+          <thead>
+            <tr>
+              <th>Créateur</th>
+              <th>Titre de la vidéo</th>
+              <th>Date de la demande</th>
+              <th>Date de création</th>
+              <th>Status de la commande</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody"><tr><td colspan="5" class="empty">En attente de données…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <small>© Miniads</small>
+  </footer>
+
+  <div class="admin-login" id="adminLogin">
+    <form id="adminLoginForm" class="admin-login-card">
+      <h2>Connexion admin</h2>
+      <div class="admin-login-error" id="adminLoginError"></div>
+      <label>Adresse e-mail
+        <input id="adminEmail" type="email" autocomplete="email" required />
+      </label>
+      <label>Mot de passe
+        <input id="adminPassword" type="password" autocomplete="current-password" required />
+      </label>
+      <button type="submit">Se connecter</button>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="./script.js"></script>
+</body>
+</html>
