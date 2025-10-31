@@ -683,6 +683,8 @@ const adminStartInput = document.getElementById("adminStartDate");
 const adminEndInput = document.getElementById("adminEndDate");
 const adminApplyCustomBtn = document.getElementById("adminApplyCustom");
 const adminKpiRevenueEl = document.getElementById("adminKpiRevenue");
+const adminKpiMonthlyThumbsLabelEl = document.getElementById("adminKpiMonthlyThumbsLabel");
+const adminKpiMonthlyThumbsEl = document.getElementById("adminKpiMonthlyThumbs");
 const adminKpiClientsEl = document.getElementById("adminKpiClients");
 const adminKpiAverageBasketEl = document.getElementById("adminKpiAverageBasket");
 const adminKpiNewClientRateEl = document.getElementById("adminKpiNewClientRate");
@@ -729,8 +731,10 @@ const agencyState = {
   global: {
     totalRevenue: 0,
     totalOrders: 0,
+    totalQuantity: 0,
     revenueByClient: new Map(),
     ordersByClient: new Map(),
+    quantityByClient: new Map(),
     timelineByClient: new Map()
   }
 };
@@ -993,6 +997,21 @@ function displayDashboardEmptyState(show) {
   }
 }
 
+function resolveMonthlyThumbsLabel(preset = "") {
+  switch (preset) {
+    case "30d":
+      return "Miniatures — 30 derniers jours";
+    case "6m":
+      return "Miniatures — 6 derniers mois";
+    case "12m":
+      return "Miniatures — 12 derniers mois";
+    case "custom":
+      return "Miniatures — période sélectionnée";
+    default:
+      return "Miniatures — période";
+  }
+}
+
 const monthLabelFormatter = new Intl.DateTimeFormat("fr-FR", { month: "short", year: "2-digit" });
 
 function formatMonthLabel(date) {
@@ -1226,8 +1245,10 @@ function prepareAgencyDataset(rows) {
   agencyState.global = {
     totalRevenue: 0,
     totalOrders: 0,
+    totalQuantity: 0,
     revenueByClient: new Map(),
     ordersByClient: new Map(),
+    quantityByClient: new Map(),
     timelineByClient: new Map()
   };
 
@@ -1249,25 +1270,30 @@ function prepareAgencyDataset(rows) {
     if (!date) return;
     const client = agencyState.fieldMap.creatorField ? String(row[agencyState.fieldMap.creatorField] || "").trim() : "";
     const revenue = agencyState.fieldMap.revenueField ? parseNumber(row[agencyState.fieldMap.revenueField]) : 0;
+    const quantityRaw = agencyState.fieldMap.quantityField ? parseNumber(row[agencyState.fieldMap.quantityField]) : 1;
+    const quantity = Number.isFinite(quantityRaw) && quantityRaw > 0 ? Math.max(1, Math.round(quantityRaw)) : 1;
+    const safeRevenue = Number.isFinite(revenue) ? revenue : 0;
     normalized.push({
       row,
       client,
       date,
       time: date.getTime(),
-      revenue: Number.isFinite(revenue) ? revenue : 0
+      revenue: safeRevenue,
+      quantity
     });
     if (client) {
       const prevRevenue = agencyState.global.revenueByClient.get(client) || 0;
-      agencyState.global.revenueByClient.set(client, prevRevenue + (Number.isFinite(revenue) ? revenue : 0));
+      agencyState.global.revenueByClient.set(client, prevRevenue + safeRevenue);
       const prevOrders = agencyState.global.ordersByClient.get(client) || 0;
       agencyState.global.ordersByClient.set(client, prevOrders + 1);
+      const prevQuantity = agencyState.global.quantityByClient.get(client) || 0;
+      agencyState.global.quantityByClient.set(client, prevQuantity + quantity);
       const timeline = agencyState.global.timelineByClient.get(client) || [];
       timeline.push(date);
       agencyState.global.timelineByClient.set(client, timeline);
     }
-    if (Number.isFinite(revenue)) {
-      agencyState.global.totalRevenue += revenue;
-    }
+    agencyState.global.totalRevenue += safeRevenue;
+    agencyState.global.totalQuantity += quantity;
     agencyState.global.totalOrders += 1;
   });
 
@@ -1535,10 +1561,16 @@ function renderRetentionChart(labels, datasetMatrix) {
 function updateAdminDashboard() {
   if (!isAdminRoute) return;
 
+  const activePreset = agencyState.filter ? agencyState.filter.preset : "";
+  if (adminKpiMonthlyThumbsLabelEl) {
+    adminKpiMonthlyThumbsLabelEl.textContent = resolveMonthlyThumbsLabel(activePreset);
+  }
+
   const hasData = Array.isArray(agencyState.normalized) && agencyState.normalized.length > 0;
   if (!hasData) {
     if (adminPeriodLabel) adminPeriodLabel.textContent = "Aucune donnée disponible";
     if (adminKpiRevenueEl) adminKpiRevenueEl.textContent = "—";
+    if (adminKpiMonthlyThumbsEl) adminKpiMonthlyThumbsEl.textContent = "—";
     if (adminKpiClientsEl) adminKpiClientsEl.textContent = "—";
     if (adminKpiAverageBasketEl) adminKpiAverageBasketEl.textContent = "—";
     if (adminKpiNewClientRateEl) adminKpiNewClientRateEl.textContent = "—";
@@ -1571,6 +1603,13 @@ function updateAdminDashboard() {
   const endTime = end ? end.getTime() : Number.POSITIVE_INFINITY;
 
   const filtered = agencyState.normalized.filter(entry => entry.time >= startTime && entry.time <= endTime);
+  const quantityInRange = filtered.reduce((sum, entry) => {
+    const qty = Number.isFinite(entry.quantity) && entry.quantity > 0 ? entry.quantity : 0;
+    return sum + qty;
+  }, 0);
+  if (adminKpiMonthlyThumbsEl) {
+    adminKpiMonthlyThumbsEl.textContent = formatCount(quantityInRange);
+  }
   const hasFiltered = filtered.length > 0;
   displayDashboardEmptyState(!hasFiltered);
 
