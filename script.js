@@ -673,6 +673,7 @@ const adminTopSubtitle = document.getElementById("adminTopSubtitle");
 const adminNavLinks = Array.from(document.querySelectorAll(".sidebar-link[data-admin-view]"));
 const adminViews = {
   dashboard: document.getElementById("adminDashboardView"),
+  insights: document.getElementById("adminInsightsView"),
   clients: adminPanel,
   extension: document.getElementById("adminExtensionView")
 };
@@ -695,6 +696,14 @@ const adminKpiActiveRateEl = document.getElementById("adminKpiActiveRate");
 const adminKpiActiveTooltip = document.getElementById("adminKpiActiveTooltip");
 const adminKpiOrdersPerClientEl = document.getElementById("adminKpiOrdersPerClient");
 const adminKpiCltvEl = document.getElementById("adminKpiCltv");
+const adminKpiRevenueDeltaEl = document.getElementById("adminKpiRevenueDelta");
+const adminKpiMonthlyThumbsDeltaEl = document.getElementById("adminKpiMonthlyThumbsDelta");
+const adminKpiClientsDeltaEl = document.getElementById("adminKpiClientsDelta");
+const adminKpiAverageBasketDeltaEl = document.getElementById("adminKpiAverageBasketDelta");
+const adminKpiNewClientRateDeltaEl = document.getElementById("adminKpiNewClientRateDelta");
+const adminKpiActiveRateDeltaEl = document.getElementById("adminKpiActiveRateDelta");
+const adminKpiOrdersPerClientDeltaEl = document.getElementById("adminKpiOrdersPerClientDelta");
+const adminKpiCltvDeltaEl = document.getElementById("adminKpiCltvDelta");
 const adminRevenueChartCanvas = document.getElementById("adminRevenueChart");
 const adminClientsChartCanvas = document.getElementById("adminClientsChart");
 const adminRatioChartCanvas = document.getElementById("adminRatioChart");
@@ -709,6 +718,25 @@ const heroDateEl = document.getElementById("heroDate");
 const heroLastDeliveryEl = document.getElementById("heroLastDeliveryValue");
 const openOrdersEl = document.getElementById("openOrdersValue");
 const clientInitialsEl = document.getElementById("clientInitials");
+const insightsReturningValue = document.getElementById("insightsReturningValue");
+const insightsReturningDelta = document.getElementById("insightsReturningDelta");
+const insightsAverageBasketValue = document.getElementById("insightsAverageBasketValue");
+const insightsAverageBasketDelta = document.getElementById("insightsAverageBasketDelta");
+const insightsActiveRateValue = document.getElementById("insightsActiveRateValue");
+const insightsActiveRateDelta = document.getElementById("insightsActiveRateDelta");
+const insightsNewClientsValue = document.getElementById("insightsNewClientsValue");
+const insightsNewClientsMeta = document.getElementById("insightsNewClientsMeta");
+const insightsNewClientsDelta = document.getElementById("insightsNewClientsDelta");
+const kpiTrendElements = [
+  adminKpiRevenueDeltaEl,
+  adminKpiMonthlyThumbsDeltaEl,
+  adminKpiClientsDeltaEl,
+  adminKpiAverageBasketDeltaEl,
+  adminKpiNewClientRateDeltaEl,
+  adminKpiActiveRateDeltaEl,
+  adminKpiOrdersPerClientDeltaEl,
+  adminKpiCltvDeltaEl
+];
 let currentClientLabel = "";
 let activeAdminClient = null;
 let discoveredClients = [];
@@ -764,6 +792,10 @@ const ADMIN_VIEW_COPY = {
     title: "Dashboard",
     subtitle: "Suivi en temps réel de l’activité Miniads."
   },
+  insights: {
+    title: "Insights & Performances",
+    subtitle: "Analyse des tendances clés sur la période sélectionnée."
+  },
   clients: {
     title: "Mes clients",
     subtitle: "Sélectionne un créateur pour charger ses miniatures et copier son lien sécurisé."
@@ -790,7 +822,7 @@ function setAdminView(view) {
     if (adminTopTitle) adminTopTitle.textContent = copy.title;
     if (adminTopSubtitle) adminTopSubtitle.textContent = copy.subtitle;
   }
-  if (view === "dashboard") {
+  if (view === "dashboard" || view === "insights") {
     initializeAgencyDashboard();
   }
   if (view === "clients") {
@@ -860,6 +892,112 @@ function formatCurrency(value, options = {}) {
 function formatPercent(value, digits = 1) {
   if (!Number.isFinite(value)) return "—";
   return `${value.toLocaleString("fr-FR", { maximumFractionDigits: digits })}%`;
+}
+
+const TREND_VISUALS = {
+  positive: { text: "#1f9d5c", bar: "rgba(31,157,92,0.7)", line: "#1f9d5c", fill: "rgba(31,157,92,0.18)" },
+  neutral: { text: "#d97706", bar: "rgba(245,154,45,0.75)", line: "#d97706", fill: "rgba(245,154,45,0.2)" },
+  negative: { text: "#d04050", bar: "rgba(208,64,80,0.72)", line: "#d04050", fill: "rgba(208,64,80,0.18)" },
+  na: { text: "#6e7695", bar: "rgba(57,66,98,0.28)", line: "#394262", fill: "rgba(57,66,98,0.12)" }
+};
+
+function computeDeltaPercent(currentValue, previousValue) {
+  if (previousValue === null || previousValue === undefined) return null;
+  const current = Number(currentValue);
+  const previous = Number(previousValue);
+  if (!Number.isFinite(current)) {
+    if (current === 0) {
+      return previous === 0 ? 0 : null;
+    }
+    return null;
+  }
+  if (!Number.isFinite(previous)) {
+    if (previous === 0) {
+      return current === 0 ? 0 : (current > 0 ? Infinity : -Infinity);
+    }
+    return null;
+  }
+  if (previous === 0) {
+    if (current === 0) return 0;
+    return current > 0 ? Infinity : current < 0 ? -Infinity : null;
+  }
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function resolveTrend(delta) {
+  if (delta === null || delta === undefined) return null;
+  if (!Number.isFinite(delta)) {
+    if (delta === Infinity) return "positive";
+    if (delta === -Infinity) return "negative";
+    return "neutral";
+  }
+  if (delta >= 3) return "positive";
+  if (delta <= -3) return "negative";
+  return "neutral";
+}
+
+function formatDeltaPercent(delta) {
+  if (delta === null || delta === undefined) return "—";
+  if (!Number.isFinite(delta)) {
+    if (delta === Infinity) return "+∞%";
+    if (delta === -Infinity) return "-∞%";
+    return "0%";
+  }
+  const prefix = delta > 0 ? "+" : "";
+  return `${prefix}${delta.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}%`;
+}
+
+function resetTrendIndicator(element, message = "—") {
+  if (!element) return;
+  element.classList.remove("trend-positive", "trend-neutral", "trend-negative", "trend-na");
+  element.classList.add("trend-na");
+  element.innerHTML = `<span class="trend-arrow">—</span><span class="trend-text">${message}</span>`;
+}
+
+function applyTrendClass(element, trend) {
+  if (!element) return;
+  element.classList.remove("trend-positive", "trend-neutral", "trend-negative", "trend-na");
+  if (!trend) {
+    element.classList.add("trend-na");
+    return;
+  }
+  element.classList.add(`trend-${trend}`);
+}
+
+function applyTrendIndicator(element, currentValue, previousValue, { suffix = "vs période précédente", previousFormatter } = {}) {
+  if (!element) return { trend: null, delta: null };
+  element.classList.remove("trend-positive", "trend-neutral", "trend-negative", "trend-na");
+  const hasPrevious = previousValue !== null && previousValue !== undefined;
+  if (!hasPrevious) {
+    resetTrendIndicator(element, "Pas de comparaison");
+    return { trend: null, delta: null };
+  }
+  const delta = computeDeltaPercent(currentValue, previousValue);
+  if (delta === null) {
+    resetTrendIndicator(element, "Pas de comparaison");
+    return { trend: null, delta: null };
+  }
+  const trend = resolveTrend(delta);
+  const arrow = trend === "positive" ? "▲" : trend === "negative" ? "▼" : "►";
+  const formattedDelta = formatDeltaPercent(delta);
+  let text = `${formattedDelta} ${suffix}`.trim();
+  if (typeof previousFormatter === "function") {
+    const formattedPrevious = previousFormatter(previousValue);
+    if (formattedPrevious) {
+      text += ` (vs ${formattedPrevious})`;
+    }
+  }
+  element.innerHTML = `<span class="trend-arrow">${arrow}</span><span class="trend-text">${text}</span>`;
+  if (trend) {
+    element.classList.add(`trend-${trend}`);
+  } else {
+    element.classList.add("trend-na");
+  }
+  return { trend, delta };
+}
+
+function getTrendVisual(trend) {
+  return TREND_VISUALS[trend] || TREND_VISUALS.na;
 }
 
 function formatFriendlyDate(date = new Date()) {
@@ -959,6 +1097,209 @@ function computeActivePeriod(filter = agencyState.filter) {
   }
 
   return { start, end, label };
+}
+
+function computePreviousPeriodRange(currentStart, currentEnd) {
+  if (!currentStart || !currentEnd) return null;
+  const startTime = currentStart.getTime();
+  const endTime = currentEnd.getTime();
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) return null;
+  const duration = Math.max(0, endTime - startTime);
+  const previousEnd = endOfDay(new Date(startTime - 1));
+  const previousStart = startOfDay(new Date(previousEnd.getTime() - duration));
+  return { start: previousStart, end: previousEnd };
+}
+
+function computeRangeMetrics(rangeStart, rangeEnd) {
+  const startTime = rangeStart ? rangeStart.getTime() : Number.NEGATIVE_INFINITY;
+  const endTime = rangeEnd ? rangeEnd.getTime() : Number.POSITIVE_INFINITY;
+  const filtered = Array.isArray(agencyState.normalized)
+    ? agencyState.normalized.filter(entry => entry.time >= startTime && entry.time <= endTime)
+    : [];
+
+  let totalRevenue = 0;
+  let totalQuantity = 0;
+  let totalOrders = 0;
+  let returningRevenue = 0;
+  const activeClients = new Set();
+  const returningClients = new Set();
+  const startBoundary = Number.isFinite(startTime) ? startTime : Number.NEGATIVE_INFINITY;
+  const endBoundary = Number.isFinite(endTime) ? endTime : Number.POSITIVE_INFINITY;
+
+  filtered.forEach(entry => {
+    const revenue = Number.isFinite(entry.revenue) ? entry.revenue : 0;
+    const quantity = Number.isFinite(entry.quantity) ? entry.quantity : 0;
+    totalRevenue += revenue;
+    totalQuantity += quantity;
+    totalOrders += 1;
+    if (entry.client) {
+      activeClients.add(entry.client);
+      const firstDate = agencyState.firstOrderByClient.get(entry.client);
+      if (firstDate && firstDate.getTime() < startBoundary) {
+        returningRevenue += revenue;
+        returningClients.add(entry.client);
+      }
+    }
+  });
+
+  let newClientsCount = 0;
+  activeClients.forEach(client => {
+    const firstDate = agencyState.firstOrderByClient.get(client);
+    if (!firstDate) return;
+    const firstTime = firstDate.getTime();
+    if (firstTime >= startBoundary && firstTime <= endBoundary) {
+      newClientsCount += 1;
+    }
+  });
+
+  const activeClientsCount = activeClients.size;
+  const totalKnownClients = agencyState.firstOrderByClient ? agencyState.firstOrderByClient.size : activeClientsCount;
+  const averageBasket = totalOrders ? totalRevenue / totalOrders : 0;
+  const newClientsRate = activeClientsCount ? (newClientsCount / activeClientsCount) * 100 : 0;
+  const activeRate = totalKnownClients ? (activeClientsCount / totalKnownClients) * 100 : 0;
+  const returningRevenueShare = totalRevenue > 0 ? (returningRevenue / totalRevenue) * 100 : 0;
+  const ordersPerClientRange = activeClientsCount ? totalOrders / activeClientsCount : 0;
+  const cltvRange = activeClientsCount ? totalRevenue / activeClientsCount : 0;
+
+  return {
+    start: rangeStart,
+    end: rangeEnd,
+    filtered,
+    revenue: totalRevenue,
+    quantity: totalQuantity,
+    orders: totalOrders,
+    activeClientsCount,
+    totalKnownClients,
+    newClientsCount,
+    newClientsRate,
+    averageBasket,
+    activeRate,
+    returningRevenueShare,
+    returningRevenue,
+    returningClients: returningClients.size,
+    ordersPerClientRange,
+    cltvRange
+  };
+}
+
+function computeLifetimeMetricsUpTo(endDate) {
+  const limit = endDate instanceof Date ? endDate.getTime() : Number.POSITIVE_INFINITY;
+  let revenueSum = 0;
+  let ordersSum = 0;
+  const clientSet = new Set();
+
+  if (Array.isArray(agencyState.normalized)) {
+    agencyState.normalized.forEach(entry => {
+      if (entry.time <= limit) {
+        revenueSum += Number.isFinite(entry.revenue) ? entry.revenue : 0;
+        ordersSum += 1;
+        if (entry.client) clientSet.add(entry.client);
+      }
+    });
+  }
+
+  const clientCount = clientSet.size;
+  return {
+    ordersPerClient: clientCount ? ordersSum / clientCount : 0,
+    cltv: clientCount ? revenueSum / clientCount : 0,
+    clientCount
+  };
+}
+
+function updateChartTrendStyles({ revenueTrend, clientsTrend, ratioTrend, retentionTrend }) {
+  applyTrendClass(adminRevenueChartStatus, revenueTrend);
+  applyTrendClass(adminClientsChartStatus, clientsTrend);
+  applyTrendClass(adminRatioChartStatus, ratioTrend);
+  applyTrendClass(adminRetentionChartStatus, retentionTrend);
+
+  const revenueChart = agencyState.charts && agencyState.charts.revenue;
+  if (revenueChart) {
+    const colors = getTrendVisual(revenueTrend);
+    if (revenueChart.data.datasets[0]) {
+      revenueChart.data.datasets[0].backgroundColor = colors.bar;
+      revenueChart.data.datasets[0].borderColor = colors.line;
+    }
+    if (revenueChart.data.datasets[1]) {
+      revenueChart.data.datasets[1].borderColor = colors.line;
+      revenueChart.data.datasets[1].backgroundColor = colors.fill;
+    }
+    revenueChart.update();
+  }
+
+  const clientsChart = agencyState.charts && agencyState.charts.clients;
+  if (clientsChart && clientsChart.data.datasets[0]) {
+    const colors = getTrendVisual(clientsTrend);
+    const dataset = clientsChart.data.datasets[0];
+    dataset.borderColor = colors.line;
+    dataset.backgroundColor = colors.fill;
+    dataset.pointBackgroundColor = colors.line;
+    dataset.pointHoverBackgroundColor = colors.line;
+    clientsChart.update();
+  }
+
+  const ratioChart = agencyState.charts && agencyState.charts.ratio;
+  if (ratioChart && ratioChart.data.datasets[0]) {
+    const colors = getTrendVisual(ratioTrend);
+    const dataset = ratioChart.data.datasets[0];
+    dataset.backgroundColor = [colors.bar, "rgba(30,31,36,0.15)"];
+    ratioChart.update();
+  }
+}
+
+function updateInsightsView(currentMetrics, previousMetrics) {
+  if (!insightsReturningValue || !insightsReturningDelta || !insightsAverageBasketValue || !insightsActiveRateValue || !insightsNewClientsValue) {
+    return;
+  }
+
+  const hasData = currentMetrics && Array.isArray(currentMetrics.filtered) && currentMetrics.filtered.length > 0;
+  if (!hasData) {
+    insightsReturningValue.textContent = "—";
+    insightsAverageBasketValue.textContent = "—";
+    insightsActiveRateValue.textContent = "—";
+    insightsNewClientsValue.textContent = "—";
+    if (insightsNewClientsMeta) insightsNewClientsMeta.textContent = "(vs —)";
+    resetTrendIndicator(insightsReturningDelta, "Pas de données");
+    resetTrendIndicator(insightsAverageBasketDelta, "Pas de données");
+    resetTrendIndicator(insightsActiveRateDelta, "Pas de données");
+    resetTrendIndicator(insightsNewClientsDelta, "Pas de données");
+    return;
+  }
+
+  const previousMetricsSafe = previousMetrics || null;
+  insightsReturningValue.textContent = formatPercent(currentMetrics.returningRevenueShare, 1);
+  applyTrendIndicator(
+    insightsReturningDelta,
+    currentMetrics.returningRevenueShare,
+    previousMetricsSafe ? previousMetricsSafe.returningRevenueShare : null
+  );
+
+  insightsAverageBasketValue.textContent = formatCurrency(currentMetrics.averageBasket, { maximumFractionDigits: 2 });
+  applyTrendIndicator(
+    insightsAverageBasketDelta,
+    currentMetrics.averageBasket,
+    previousMetricsSafe ? previousMetricsSafe.averageBasket : null
+  );
+
+  insightsActiveRateValue.textContent = formatPercent(currentMetrics.activeRate, 1);
+  applyTrendIndicator(
+    insightsActiveRateDelta,
+    currentMetrics.activeRate,
+    previousMetricsSafe ? previousMetricsSafe.activeRate : null
+  );
+
+  const previousNewClients = previousMetricsSafe ? previousMetricsSafe.newClientsCount : null;
+  insightsNewClientsValue.textContent = formatCount(currentMetrics.newClientsCount);
+  if (insightsNewClientsMeta) {
+    insightsNewClientsMeta.textContent = previousNewClients !== null && previousNewClients !== undefined
+      ? `(vs ${formatCount(previousNewClients)})`
+      : "(vs —)";
+  }
+  applyTrendIndicator(
+    insightsNewClientsDelta,
+    currentMetrics.newClientsCount,
+    previousNewClients,
+    { previousFormatter: value => formatCount(value) }
+  );
 }
 
 function updateFilterButtonsUI() {
@@ -1589,11 +1930,14 @@ function updateAdminDashboard() {
     if (adminClientsChartStatus) adminClientsChartStatus.textContent = "—";
     if (adminRatioChartStatus) adminRatioChartStatus.textContent = "—";
     if (adminRetentionChartStatus) adminRetentionChartStatus.textContent = "—";
+    kpiTrendElements.forEach(element => resetTrendIndicator(element, "Pas de données"));
+    updateInsightsView(null, null);
     displayDashboardEmptyState(true);
     renderRevenueChart([], [], []);
     renderClientsChart([], []);
     renderRatioChart(0, 0);
     renderRetentionChart([], []);
+    updateChartTrendStyles({ revenueTrend: null, clientsTrend: null, ratioTrend: null, retentionTrend: null });
     return;
   }
 
@@ -1606,19 +1950,18 @@ function updateAdminDashboard() {
     adminTopSubtitle.textContent = base ? `${base} — ${label}` : label;
   }
 
-  const startTime = start ? start.getTime() : Number.NEGATIVE_INFINITY;
-  const endTime = end ? end.getTime() : Number.POSITIVE_INFINITY;
+  const currentMetrics = computeRangeMetrics(start, end);
+  const previousRange = computePreviousPeriodRange(start, end);
+  const previousMetrics = previousRange ? computeRangeMetrics(previousRange.start, previousRange.end) : null;
 
-  const filtered = agencyState.normalized.filter(entry => entry.time >= startTime && entry.time <= endTime);
-  const quantityInRange = filtered.reduce((sum, entry) => {
-    const qty = Number.isFinite(entry.quantity) && entry.quantity > 0 ? entry.quantity : 0;
-    return sum + qty;
-  }, 0);
   if (adminKpiMonthlyThumbsEl) {
-    adminKpiMonthlyThumbsEl.textContent = formatCount(quantityInRange);
+    adminKpiMonthlyThumbsEl.textContent = formatCount(currentMetrics.quantity);
   }
-  const hasFiltered = filtered.length > 0;
+
+  const hasFiltered = currentMetrics.filtered.length > 0;
   displayDashboardEmptyState(!hasFiltered);
+
+  updateInsightsView(currentMetrics, previousMetrics);
 
   if (!hasFiltered) {
     if (adminKpiRevenueEl) adminKpiRevenueEl.textContent = "—";
@@ -1633,53 +1976,43 @@ function updateAdminDashboard() {
     if (adminClientsChartStatus) adminClientsChartStatus.textContent = "Aucune donnée";
     if (adminRatioChartStatus) adminRatioChartStatus.textContent = "Aucune donnée";
     if (adminRetentionChartStatus) adminRetentionChartStatus.textContent = "Aucune donnée";
+    kpiTrendElements.forEach(element => resetTrendIndicator(element, "Pas de données"));
     renderRevenueChart([], [], []);
     renderClientsChart([], []);
     renderRatioChart(0, 0);
     renderRetentionChart([], []);
+    updateChartTrendStyles({ revenueTrend: null, clientsTrend: null, ratioTrend: null, retentionTrend: null });
     return;
   }
 
-  const totalRevenue = filtered.reduce((sum, entry) => sum + (Number.isFinite(entry.revenue) ? entry.revenue : 0), 0);
-  const totalOrders = filtered.length;
-  const clientsSet = new Set(filtered.map(entry => entry.client).filter(Boolean));
-  const activeClientsCount = clientsSet.size;
-  const totalKnownClients = agencyState.firstOrderByClient ? agencyState.firstOrderByClient.size : activeClientsCount;
-
-  let newClientsCount = 0;
-  const startBoundary = start ? start.getTime() : Number.NEGATIVE_INFINITY;
-  const endBoundary = end ? end.getTime() : Number.POSITIVE_INFINITY;
-  clientsSet.forEach(client => {
-    const firstDate = agencyState.firstOrderByClient.get(client);
-    if (!firstDate) return;
-    const firstTime = firstDate.getTime();
-    if (firstTime >= startBoundary && firstTime <= endBoundary) {
-      newClientsCount += 1;
-    }
-  });
-
+  const totalRevenue = currentMetrics.revenue;
+  const totalOrders = currentMetrics.orders;
+  const activeClientsCount = currentMetrics.activeClientsCount;
+  const totalKnownClients = currentMetrics.totalKnownClients;
+  const newClientsCount = currentMetrics.newClientsCount;
+  const newClientsRate = currentMetrics.newClientsRate;
+  const averageBasket = currentMetrics.averageBasket;
+  const activeRate = currentMetrics.activeRate;
   const totalExisting = Math.max(activeClientsCount - newClientsCount, 0);
-  const averageBasket = totalOrders ? totalRevenue / totalOrders : 0;
-  const newClientsRate = activeClientsCount ? (newClientsCount / activeClientsCount) * 100 : 0;
 
   if (adminKpiRevenueEl) adminKpiRevenueEl.textContent = formatCurrency(totalRevenue, { maximumFractionDigits: 0 });
   if (adminKpiClientsEl) adminKpiClientsEl.textContent = formatCount(activeClientsCount);
   if (adminKpiAverageBasketEl) adminKpiAverageBasketEl.textContent = formatCurrency(averageBasket, { maximumFractionDigits: 2 });
   if (adminKpiNewClientRateEl) adminKpiNewClientRateEl.textContent = formatPercent(newClientsRate);
-
-  const globalRevenueValues = Array.from(agencyState.global.revenueByClient.values());
-  const globalOrdersValues = Array.from(agencyState.global.ordersByClient.values());
-  const globalRevenueSum = globalRevenueValues.reduce((sum, value) => sum + value, 0);
-  const globalOrdersSum = globalOrdersValues.reduce((sum, value) => sum + value, 0);
-  const globalClientCount = agencyState.global.revenueByClient.size || totalKnownClients || activeClientsCount;
-  const ordersPerClientAvg = globalClientCount ? globalOrdersSum / globalClientCount : 0;
-  const cltvAvg = globalClientCount ? globalRevenueSum / globalClientCount : 0;
-
-  const activeRate = totalKnownClients ? (activeClientsCount / totalKnownClients) * 100 : 0;
   if (adminKpiActiveRateEl) adminKpiActiveRateEl.textContent = formatPercent(activeRate, 1);
-  if (adminKpiActiveTooltip) adminKpiActiveTooltip.textContent = `${formatCount(activeClientsCount)} actifs / ${formatCount(totalKnownClients)} clients`;
-  if (adminKpiOrdersPerClientEl) adminKpiOrdersPerClientEl.textContent = ordersPerClientAvg.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
-  if (adminKpiCltvEl) adminKpiCltvEl.textContent = formatCurrency(cltvAvg, { maximumFractionDigits: 0 });
+
+  const lifetimeCurrent = computeLifetimeMetricsUpTo(null);
+  const lifetimePrevious = previousRange ? computeLifetimeMetricsUpTo(previousRange.end) : null;
+
+  if (adminKpiActiveTooltip) {
+    adminKpiActiveTooltip.textContent = `${formatCount(activeClientsCount)} actifs / ${formatCount(totalKnownClients)} clients`;
+  }
+  if (adminKpiOrdersPerClientEl) {
+    adminKpiOrdersPerClientEl.textContent = lifetimeCurrent.ordersPerClient.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
+  }
+  if (adminKpiCltvEl) {
+    adminKpiCltvEl.textContent = formatCurrency(lifetimeCurrent.cltv, { maximumFractionDigits: 0 });
+  }
 
   if (adminRevenueChartStatus) {
     const statusText = lastDirectorySync ? `MAJ ${formatDateTime(lastDirectorySync)}` : `${totalOrders} commandes`;
@@ -1689,15 +2022,19 @@ function updateAdminDashboard() {
   if (adminRatioChartStatus) adminRatioChartStatus.textContent = `${formatCount(newClientsCount)} nouveaux`;
   if (adminRetentionChartStatus) adminRetentionChartStatus.textContent = `${formatCount(totalKnownClients)} clients analysés`;
 
-  const rangeStart = start || (filtered[0] ? startOfDay(filtered[0].date) : null);
-  const rangeEnd = end || (filtered[filtered.length - 1] ? endOfDay(filtered[filtered.length - 1].date) : null);
+  const startBoundary = start ? start.getTime() : Number.NEGATIVE_INFINITY;
+  const endBoundary = end ? end.getTime() : Number.POSITIVE_INFINITY;
+  const rangeStart = start || (currentMetrics.filtered[0] ? startOfDay(currentMetrics.filtered[0].date) : null);
+  const rangeEnd = end || (currentMetrics.filtered[currentMetrics.filtered.length - 1]
+    ? endOfDay(currentMetrics.filtered[currentMetrics.filtered.length - 1].date)
+    : null);
   const timeline = buildMonthlyTimeline(rangeStart, rangeEnd);
   const monthKeys = timeline.map(getMonthKey);
   const monthIndex = new Map();
   monthKeys.forEach((key, idx) => monthIndex.set(key, idx));
 
   const revenuePerMonth = new Array(timeline.length).fill(0);
-  filtered.forEach(entry => {
+  currentMetrics.filtered.forEach(entry => {
     const key = getMonthKey(entry.date);
     const idx = monthIndex.get(key);
     if (idx !== undefined) {
@@ -1766,12 +2103,59 @@ function updateAdminDashboard() {
     });
   });
 
+  const revenueDelta = applyTrendIndicator(
+    adminKpiRevenueDeltaEl,
+    totalRevenue,
+    previousMetrics ? previousMetrics.revenue : null
+  );
+  applyTrendIndicator(
+    adminKpiMonthlyThumbsDeltaEl,
+    currentMetrics.quantity,
+    previousMetrics ? previousMetrics.quantity : null
+  );
+  const clientsDelta = applyTrendIndicator(
+    adminKpiClientsDeltaEl,
+    activeClientsCount,
+    previousMetrics ? previousMetrics.activeClientsCount : null
+  );
+  applyTrendIndicator(
+    adminKpiAverageBasketDeltaEl,
+    averageBasket,
+    previousMetrics ? previousMetrics.averageBasket : null
+  );
+  const newClientRateDelta = applyTrendIndicator(
+    adminKpiNewClientRateDeltaEl,
+    newClientsRate,
+    previousMetrics ? previousMetrics.newClientsRate : null
+  );
+  const activeRateDelta = applyTrendIndicator(
+    adminKpiActiveRateDeltaEl,
+    activeRate,
+    previousMetrics ? previousMetrics.activeRate : null
+  );
+  applyTrendIndicator(
+    adminKpiOrdersPerClientDeltaEl,
+    lifetimeCurrent.ordersPerClient,
+    lifetimePrevious ? lifetimePrevious.ordersPerClient : null
+  );
+  applyTrendIndicator(
+    adminKpiCltvDeltaEl,
+    lifetimeCurrent.cltv,
+    lifetimePrevious ? lifetimePrevious.cltv : null
+  );
+
   renderRevenueChart(timelineLabels, revenuePerMonth, movingAverage);
   renderClientsChart(timelineLabels, clientTotals);
   renderRatioChart(newClientsCount, totalExisting);
   renderRetentionChart(retentionLabels, retentionMatrix);
-}
 
+  updateChartTrendStyles({
+    revenueTrend: revenueDelta.trend,
+    clientsTrend: clientsDelta.trend,
+    ratioTrend: newClientRateDelta.trend,
+    retentionTrend: activeRateDelta.trend
+  });
+}
 async function initializeAgencyDashboard(force = false) {
   if (!isAdminRoute) return;
   if (agencyLoading) return;
