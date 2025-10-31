@@ -95,6 +95,7 @@
       </div>
       <nav class="sidebar-nav">
         <button type="button" class="sidebar-link active" data-admin-view="dashboard">Dashboard</button>
+        <button type="button" class="sidebar-link" data-admin-view="insights">Insights &amp; Performances</button>
         <button type="button" class="sidebar-link" data-admin-view="clients">Mes clients</button>
         <button type="button" class="sidebar-link" data-admin-view="extension">Extension YouTube</button>
       </nav>
@@ -138,35 +139,43 @@
           <article class="kpi-summary">
             <span class="kpi-summary-label">CA total</span>
             <span class="kpi-summary-value" id="adminKpiRevenue">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiRevenueDelta">—</span>
           </article>
           <article class="kpi-summary">
             <span class="kpi-summary-label" id="adminKpiMonthlyThumbsLabel">Miniatures — période</span>
             <span class="kpi-summary-value" id="adminKpiMonthlyThumbs">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiMonthlyThumbsDelta">—</span>
           </article>
           <article class="kpi-summary">
             <span class="kpi-summary-label">Clients actifs</span>
             <span class="kpi-summary-value" id="adminKpiClients">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiClientsDelta">—</span>
           </article>
           <article class="kpi-summary">
             <span class="kpi-summary-label">Panier moyen</span>
             <span class="kpi-summary-value" id="adminKpiAverageBasket">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiAverageBasketDelta">—</span>
           </article>
           <article class="kpi-summary">
             <span class="kpi-summary-label">% nouveaux clients</span>
             <span class="kpi-summary-value" id="adminKpiNewClientRate">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiNewClientRateDelta">—</span>
           </article>
           <article class="kpi-summary">
             <span class="kpi-summary-label">% clients actifs</span>
             <span class="kpi-summary-value" id="adminKpiActiveRate">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiActiveRateDelta">—</span>
             <small class="kpi-mini" id="adminKpiActiveTooltip">—</small>
           </article>
           <article class="kpi-summary">
             <span class="kpi-summary-label">Commandes / client</span>
             <span class="kpi-summary-value" id="adminKpiOrdersPerClient">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiOrdersPerClientDelta">—</span>
           </article>
           <article class="kpi-summary">
             <span class="kpi-summary-label">CLTV moyenne</span>
             <span class="kpi-summary-value" id="adminKpiCltv">—</span>
+            <span class="kpi-summary-trend trend-indicator" id="adminKpiCltvDelta">—</span>
           </article>
         </div>
 
@@ -214,6 +223,39 @@
         </div>
 
         <p class="admin-dashboard-empty hidden" id="adminDashboardEmpty">Aucun enregistrement pour la période sélectionnée.</p>
+      </section>
+
+      <section class="admin-view" id="adminInsightsView">
+        <div class="insights-page">
+          <header class="insights-header">
+            <span class="insights-eyebrow">Analyse</span>
+            <h2>Insights &amp; Performances</h2>
+            <p>Analyse synthétique des tendances clés sur la période sélectionnée.</p>
+          </header>
+          <div class="insights-grid">
+            <article class="insight-card">
+              <h3 class="insight-card-title">Les clients récurrents ont généré</h3>
+              <p class="insight-card-value"><span id="insightsReturningValue">—</span> du CA</p>
+              <p class="insight-card-trend trend-indicator" id="insightsReturningDelta">—</p>
+            </article>
+            <article class="insight-card">
+              <h3 class="insight-card-title">Panier moyen</h3>
+              <p class="insight-card-value" id="insightsAverageBasketValue">—</p>
+              <p class="insight-card-trend trend-indicator" id="insightsAverageBasketDelta">—</p>
+            </article>
+            <article class="insight-card">
+              <h3 class="insight-card-title">Taux de clients actifs</h3>
+              <p class="insight-card-value" id="insightsActiveRateValue">—</p>
+              <p class="insight-card-trend trend-indicator" id="insightsActiveRateDelta">—</p>
+            </article>
+            <article class="insight-card">
+              <h3 class="insight-card-title">Nouveaux clients</h3>
+              <p class="insight-card-value" id="insightsNewClientsValue">—</p>
+              <p class="insight-card-meta" id="insightsNewClientsMeta">(vs —)</p>
+              <p class="insight-card-trend trend-indicator" id="insightsNewClientsDelta">—</p>
+            </article>
+          </div>
+        </div>
       </section>
 
       <section class="admin-view" id="adminPanel">
