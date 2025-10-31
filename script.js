@@ -658,12 +658,15 @@ const clientList = document.getElementById("clientList");
 const shareBox = document.getElementById("shareBox");
 const shareLinkInput = document.getElementById("shareLink");
 const shareHint = document.getElementById("shareHint");
+const shareTitle = document.getElementById("shareTitle");
+const shareSubtitle = document.getElementById("shareSubtitle");
 const copyShareBtn = document.getElementById("copyShareLink");
 const loginWrapper = document.getElementById("loginWrapper");
 const clientContainer = document.getElementById("clientContainer");
 const adminLayout = document.getElementById("adminLayout");
 const clientTableHost = document.getElementById("clientTableHost");
 const adminTableHost = document.getElementById("adminTableHost");
+const adminTablePlaceholder = document.getElementById("adminTablePlaceholder");
 const tableSection = document.getElementById("tableSection");
 const adminTopTitle = document.getElementById("adminTopTitle");
 const adminTopSubtitle = document.getElementById("adminTopSubtitle");
@@ -830,7 +833,11 @@ function showLoginUI() {
     shareBox.classList.remove("visible");
     if (shareLinkInput) shareLinkInput.value = "";
     if (shareHint) shareHint.textContent = "";
+    if (shareTitle) shareTitle.textContent = "Sélectionne un client";
+    if (shareSubtitle) shareSubtitle.textContent = "Choisis un client dans la liste pour générer le lien sécurisé.";
   }
+  if (adminTablePlaceholder) adminTablePlaceholder.classList.remove("hidden");
+  if (adminTableHost) adminTableHost.classList.add("hidden");
 }
 
 function setClientStats({ total, monthly, lastDate, loading = false } = {}) {
@@ -1920,6 +1927,8 @@ function handleAdminSelect(slug) {
   activeAdminClient = normalizedSlug;
   setClientContext(entry ? entry.label : (config.label || slugToName(normalizedSlug)));
   renderClientList(clientSearchInput ? clientSearchInput.value : "");
+  if (shareTitle) shareTitle.textContent = entry ? entry.label : (config.label || slugToName(normalizedSlug));
+  if (shareSubtitle) shareSubtitle.textContent = `Identifiant : ${normalizedSlug}`;
   loadAirtable(config);
   if (shareBox) {
     const params = new URLSearchParams();
@@ -1935,6 +1944,8 @@ function handleAdminSelect(slug) {
     if (shareLinkInput) shareLinkInput.value = `${origin || ""}${location.pathname}?${params.toString()}`;
     shareBox.classList.add("visible");
   }
+  if (adminTablePlaceholder) adminTablePlaceholder.classList.add("hidden");
+  if (adminTableHost) adminTableHost.classList.remove("hidden");
   const params = new URLSearchParams(location.search);
   params.set("mode", "admin");
   params.set("client", normalizedSlug);
@@ -2012,7 +2023,11 @@ async function enterAdminMode(initialSlug) {
     shareBox.classList.remove("visible");
     if (shareLinkInput) shareLinkInput.value = "";
     if (shareHint) shareHint.textContent = "Sélectionne un client pour générer le lien de partage.";
+    if (shareTitle) shareTitle.textContent = "Sélectionne un client";
+    if (shareSubtitle) shareSubtitle.textContent = "Choisis un client dans la liste pour générer le lien sécurisé.";
   }
+  if (adminTablePlaceholder) adminTablePlaceholder.classList.remove("hidden");
+  if (adminTableHost) adminTableHost.classList.add("hidden");
   if (clientSearchInput) clientSearchInput.value = "";
   setAdminView(initialSlug ? "clients" : activeAdminView || "clients");
   await buildClientDirectory();
@@ -2033,6 +2048,8 @@ async function enterAdminMode(initialSlug) {
   } else {
     currentClientConfig = null;
     setClientContext("");
+    if (adminTablePlaceholder) adminTablePlaceholder.classList.remove("hidden");
+    if (adminTableHost) adminTableHost.classList.add("hidden");
   }
   initializeAgencyDashboard();
 }

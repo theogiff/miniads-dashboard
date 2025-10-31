@@ -217,26 +217,37 @@
       </section>
 
       <section class="admin-view" id="adminPanel">
-        <div class="admin-clients-head">
-          <div>
-            <h2>Mes clients</h2>
-            <p>Pilote chaque dashboard client et copie leur lien sécurisé.</p>
-          </div>
-          <div class="admin-clients-actions">
-            <input id="clientSearch" type="search" placeholder="Rechercher un client…" autocomplete="off" />
-          </div>
-        </div>
-        <div id="clientList" class="client-list"></div>
-        <div class="share-box" id="shareBox">
-          <label>URL à partager
-            <div class="share-input">
-              <input id="shareLink" type="url" readonly />
-              <button type="button" id="copyShareLink">Copier</button>
+        <div class="admin-directory">
+          <aside class="admin-directory-sidebar">
+            <div class="admin-clients-head">
+              <div>
+                <h2>Mes clients</h2>
+                <p>Pilote chaque dashboard client et partage leur accès sécurisé.</p>
+              </div>
+              <div class="admin-clients-actions">
+                <input id="clientSearch" type="search" placeholder="Rechercher un client…" autocomplete="off" />
+              </div>
             </div>
-          </label>
-          <small id="shareHint"></small>
+            <div id="clientList" class="client-list"></div>
+          </aside>
+          <div class="admin-directory-main">
+            <div class="share-box" id="shareBox">
+              <div class="share-box-header">
+                <h3 id="shareTitle">Sélectionne un client</h3>
+                <p id="shareSubtitle">Choisis un client dans la liste pour générer le lien sécurisé.</p>
+              </div>
+              <label>URL à partager
+                <div class="share-input">
+                  <input id="shareLink" type="url" readonly />
+                  <button type="button" id="copyShareLink">Copier</button>
+                </div>
+              </label>
+              <small id="shareHint">Sélectionne un client pour générer le lien de partage.</small>
+            </div>
+            <div class="admin-table-placeholder" id="adminTablePlaceholder">Sélectionne un client pour afficher son historique.</div>
+            <div id="adminTableHost" class="table-host hidden"></div>
+          </div>
         </div>
-        <div id="adminTableHost" class="table-host"></div>
       </section>
 
       <section class="admin-view" id="adminExtensionView">
