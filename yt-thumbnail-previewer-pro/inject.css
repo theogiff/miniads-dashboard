@@ -1,0 +1,18 @@
+body.ytp-sidebar-open ytd-app {
+  margin-left: 360px !important;
+  transition: margin-left 0.3s ease;
+}
+
+body.ytp-sidebar-collapsed ytd-app {
+  margin-left: 72px !important;
+  transition: margin-left 0.3s ease;
+}
+
+body.ytp-sidebar-hidden ytd-app {
+  margin-left: 0 !important;
+}
+
+.ytp-manual-highlight {
+  outline: 2px solid #3ea6ff !important;
+  outline-offset: -2px !important;
+}
