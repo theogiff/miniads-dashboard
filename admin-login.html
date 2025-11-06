@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Miniads — Accès administrateur</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./admin-login.css" />
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="login-card" aria-labelledby="adminLoginTitle">
+        <header class="login-card__header">
+          <img src="./logo.svg" alt="Miniads" class="login-card__logo" />
+          <div class="login-card__heading">
+            <h1 id="adminLoginTitle">Espace administrateur</h1>
+            <p>Connectez-vous pour accéder au back-office Miniads.</p>
+          </div>
+        </header>
+        <form class="login-form">
+          <div class="form-field">
+            <label for="adminEmail">Adresse e-mail</label>
+            <input type="email" id="adminEmail" name="email" autocomplete="username" placeholder="prenom@miniads.fr" required />
+          </div>
+          <div class="form-field">
+            <label for="adminPassword">Mot de passe</label>
+            <input type="password" id="adminPassword" name="password" autocomplete="current-password" placeholder="••••••••" required />
+          </div>
+          <button type="submit" class="login-submit">Se connecter</button>
+        </form>
+        <a class="login-recovery" href="#">Identifiant oublié</a>
+      </section>
+      <footer class="login-footnote">
+        <small>Page confidentielle réservée aux administrateurs Miniads.</small>
+      </footer>
+    </main>
+  </body>
+</html>
