@@ -19,7 +19,8 @@
             <p>Connectez-vous pour accéder au back-office Miniads.</p>
           </div>
         </header>
-        <form class="login-form">
+        <p id="adminLoginError" class="login-error" role="alert" aria-live="polite"></p>
+        <form id="adminLoginForm" class="login-form">
           <div class="form-field">
             <label for="adminEmail">Adresse e-mail</label>
             <input type="email" id="adminEmail" name="email" autocomplete="username" placeholder="prenom@miniads.fr" required />
@@ -36,5 +37,7 @@
         <small>Page confidentielle réservée aux administrateurs Miniads.</small>
       </footer>
     </main>
+    <script src="./admin-auth.js"></script>
+    <script src="./admin-login.js"></script>
   </body>
 </html>

@@ -200,9 +200,27 @@ const CLIENTS = {
 // }
 };
 
-const ADMIN_EMAIL = "test@test.fr";
-const ADMIN_PASSWORD = "admin";
-const ADMIN_SESSION_KEY = "miniads-admin-session";
+const ADMIN_DEFAULTS = {
+  email: "test@test.fr",
+  password: "admin",
+  sessionKey: "miniads-admin-session"
+};
+
+const ADMIN_CONFIG = (() => {
+  if (typeof window === "undefined") return ADMIN_DEFAULTS;
+  const external = window.MINIADS_ADMIN_AUTH && typeof window.MINIADS_ADMIN_AUTH === "object"
+    ? window.MINIADS_ADMIN_AUTH
+    : {};
+  return {
+    email: external.email || ADMIN_DEFAULTS.email,
+    password: external.password || ADMIN_DEFAULTS.password,
+    sessionKey: external.sessionKey || ADMIN_DEFAULTS.sessionKey
+  };
+})();
+
+const ADMIN_EMAIL = ADMIN_CONFIG.email;
+const ADMIN_PASSWORD = ADMIN_CONFIG.password;
+const ADMIN_SESSION_KEY = ADMIN_CONFIG.sessionKey;
 
 function escapeFormulaValue(value) {
   return String(value || "").replace(/'/g, "''");
