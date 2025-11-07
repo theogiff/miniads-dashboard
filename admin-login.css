@@ -72,6 +72,21 @@ body {
   font-weight: 500;
 }
 
+.login-error {
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: #991b1b;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.login-error:empty {
+  display: none;
+}
+
 .login-form {
   display: grid;
   gap: 1.25rem;
