@@ -18,15 +18,16 @@
           </div>
         </div>
         <nav class="client-sidebar-nav">
-          <button type="button" class="client-nav-link active">
+          <button type="button" class="client-nav-link active" data-client-view="dashboard">
             <span class="client-nav-label">Tableau de bord</span>
             <span class="client-nav-pill">Actif</span>
           </button>
-          <button type="button" class="client-nav-link">
+          <button type="button" class="client-nav-link" data-scroll-target="#tableSection">
             <span class="client-nav-label">Commandes</span>
           </button>
-          <button type="button" class="client-nav-link">
-            <span class="client-nav-label">Support</span>
+          <button type="button" class="client-nav-link" data-client-view="miniatures">
+            <span class="client-nav-label">Mes miniatures</span>
+            <span class="client-nav-pill">Actif</span>
           </button>
         </nav>
         <div class="client-sidebar-footer">
@@ -52,37 +53,72 @@
       </header>
 
       <main class="container client-content">
-        <section class="hero">
-          <div class="hero-header">
-            <div class="hero-pill-group">
-              <span class="hero-pill hero-pill-primary">Espace client</span>
-              <span class="hero-pill hero-pill-neutral" id="heroDate">Aujourd’hui</span>
+        <div class="client-view active" id="clientDashboardView" data-client-view="dashboard">
+          <section class="hero">
+            <div class="hero-header">
+              <div class="hero-pill-group">
+                <span class="hero-pill hero-pill-primary">Espace client</span>
+                <span class="hero-pill hero-pill-neutral" id="heroDate">Aujourd’hui</span>
+              </div>
+              <div class="hero-snapshot-head">
+                <span class="hero-snapshot-badge">Synthèse</span>
+                <span class="hero-snapshot-meta">Vos chiffres clés</span>
+              </div>
             </div>
-            <div class="hero-snapshot-head">
-              <span class="hero-snapshot-badge">Synthèse</span>
-              <span class="hero-snapshot-meta">Vos chiffres clés</span>
+            <div class="hero-kpi-grid">
+              <article class="hero-card">
+                <div class="hero-card-icon hero-card-icon-total" aria-hidden="true"></div>
+                <div class="hero-card-label">Miniatures totales</div>
+                <div class="hero-card-value" id="totalThumbs">—</div>
+              </article>
+              <article class="hero-card">
+                <div class="hero-card-icon hero-card-icon-month" aria-hidden="true"></div>
+                <div class="hero-card-label">Livrées ce mois</div>
+                <div class="hero-card-value" id="deliveredThisMonth">—</div>
+              </article>
+              <article class="hero-card">
+                <div class="hero-card-icon hero-card-icon-last" aria-hidden="true"></div>
+                <div class="hero-card-label">Dernière livraison</div>
+                <div class="hero-card-value" id="lastDelivered">—</div>
+              </article>
+            </div>
+          </section>
+
+          <div id="clientTableHost" class="table-host"></div>
+        </div>
+
+        <section class="client-view miniatures-view" id="clientMiniaturesView" data-client-view="miniatures" aria-labelledby="miniaturesTitle">
+          <div class="miniatures-header">
+            <span class="miniatures-pill">Drive sécurisé</span>
+            <h2 id="miniaturesTitle">Mes miniatures</h2>
+            <p id="miniaturesIntro">Accède à toutes tes miniatures livrées, centralisées dans Google Drive.</p>
+          </div>
+          <div class="miniatures-content hidden" id="miniaturesContent">
+            <article class="miniatures-embed card" id="miniaturesEmbed">
+              <div class="miniatures-embed-frame">
+                <iframe id="miniaturesDriveFrame" title="Miniatures Google Drive" loading="lazy"></iframe>
+              </div>
+              <div class="miniatures-embed-meta">
+                <h3 id="miniaturesEmbedTitle">Dossier principal</h3>
+                <p id="miniaturesEmbedSubtitle">Prévisualise directement ton dossier Drive pour retrouver rapidement ton historique.</p>
+                <p class="miniatures-embed-hint hidden" id="miniaturesEmbedHint">Impossible d’afficher un aperçu pour ce dossier. Ouvre-le directement dans Google Drive.</p>
+                <a id="miniaturesExternalLink" class="miniatures-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Ouvrir dans Google Drive</a>
+              </div>
+            </article>
+            <div class="miniatures-folders card" id="miniaturesFolders">
+              <div class="miniatures-folders-head">
+                <h3>Dossiers disponibles</h3>
+                <p>Organise tes miniatures par chaîne, campagne ou année et accède-y immédiatement.</p>
+              </div>
+              <div id="miniaturesFolderList" class="miniatures-folder-list"></div>
             </div>
           </div>
-          <div class="hero-kpi-grid">
-            <article class="hero-card">
-              <div class="hero-card-icon hero-card-icon-total" aria-hidden="true"></div>
-              <div class="hero-card-label">Miniatures totales</div>
-              <div class="hero-card-value" id="totalThumbs">—</div>
-            </article>
-            <article class="hero-card">
-              <div class="hero-card-icon hero-card-icon-month" aria-hidden="true"></div>
-              <div class="hero-card-label">Livrées ce mois</div>
-              <div class="hero-card-value" id="deliveredThisMonth">—</div>
-            </article>
-            <article class="hero-card">
-              <div class="hero-card-icon hero-card-icon-last" aria-hidden="true"></div>
-              <div class="hero-card-label">Dernière livraison</div>
-              <div class="hero-card-value" id="lastDelivered">—</div>
-            </article>
+          <div class="miniatures-empty card" id="miniaturesEmptyState">
+            <h3>Dossier en cours de configuration</h3>
+            <p>Ton accès Drive sera synchronisé ici dès que tes miniatures auront été ajoutées.</p>
+            <p>Besoin d’un lien immédiat ? Contacte-nous sur <a href="mailto:contact@miniads.fr">contact@miniads.fr</a>.</p>
           </div>
         </section>
-
-        <div id="clientTableHost" class="table-host"></div>
       </main>
     </div>
   </div>

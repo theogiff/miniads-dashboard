@@ -177,6 +177,76 @@ function flattenAirtableValue(value) {
   return String(value);
 }
 
+function extractDriveFolderId(value = "") {
+  if (!value) return "";
+  const trimmed = String(value).trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) {
+    const folderMatch = trimmed.match(/\/folders\/([a-zA-Z0-9_-]+)/i);
+    if (folderMatch) return folderMatch[1];
+    const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+    if (idMatch) return idMatch[1];
+    return "";
+  }
+  return /^[a-zA-Z0-9_-]+$/.test(trimmed) ? trimmed : "";
+}
+
+function buildDriveFolderEntry({ id, url, label, description }) {
+  const safeId = id && /^[a-zA-Z0-9_-]+$/.test(id) ? id : "";
+  const finalUrl = (url && url.trim()) || (safeId ? `https://drive.google.com/drive/folders/${safeId}` : "");
+  if (!finalUrl && !safeId) return null;
+  const embedUrl = safeId ? `https://drive.google.com/embeddedfolderview?id=${safeId}#grid` : "";
+  return {
+    id: safeId,
+    url: finalUrl,
+    embedUrl,
+    label: (label || "").trim() || "Miniatures livrées",
+    description: (description || "").trim()
+  };
+}
+
+function normalizeDriveFolder(input) {
+  if (!input) return null;
+  if (typeof input === "string") {
+    const id = extractDriveFolderId(input);
+    const url = /^https?:\/\//i.test(input) ? input : "";
+    return buildDriveFolderEntry({ id, url });
+  }
+  if (typeof input === "object") {
+    const candidateId = input.id || input.url || "";
+    const id = extractDriveFolderId(candidateId);
+    const url = typeof input.url === "string" ? input.url : "";
+    return buildDriveFolderEntry({
+      id,
+      url,
+      label: input.label,
+      description: input.description
+    });
+  }
+  return null;
+}
+
+function normalizeDriveFolders(configEntry) {
+  if (!configEntry) return [];
+  const seeds = [];
+  if (Array.isArray(configEntry.driveFolders)) {
+    seeds.push(...configEntry.driveFolders);
+  } else if (configEntry.driveFolderId || configEntry.driveFolderUrl) {
+    seeds.push({
+      id: configEntry.driveFolderId,
+      url: configEntry.driveFolderUrl,
+      label: configEntry.driveFolderLabel,
+      description: configEntry.driveFolderDescription
+    });
+  }
+  return seeds
+    .map(normalizeDriveFolder)
+    .filter((folder, index, arr) => {
+      if (!folder) return false;
+      return arr.findIndex(item => item && item.id === folder.id && item.url === folder.url) === index;
+    });
+}
+
 // --- Configuration multi-clients ---
 // Renseigne ici ton token d'accès Airtable (lecture seule) commun à tous les clients.
 const DEFAULT_API_KEY = "patcwtLlGwr56ejaH.3366d5e270a09e8874feff12cf371bee81a82b0326a0b3e5da1ed7ced2bdb3de";
@@ -196,7 +266,13 @@ const CLIENTS = {
 //   accessKey: "client-secret-oseille", // requis dans l'URL ?key=...
 //   filterByFormula: "{Créateurs} = 'OseilleTV'",
 //   apiKey: "", // (optionnel) pour override du token global
-//   greeting: ["Hey Oseille 👋 ravi de te revoir !", "Voici ton espace client..."] // (optionnel)
+//   greeting: ["Hey Oseille 👋 ravi de te revoir !", "Voici ton espace client..."], // (optionnel)
+//   driveFolders: [
+//     { id: "1AbcXYZ", label: "Miniatures validées", description: "Toutes les miniatures prêtes à publier." },
+//     "https://drive.google.com/drive/folders/EXEMPLE_AUTRE_DOSSIER"
+//   ], // (optionnel) plusieurs dossiers possibles
+//   driveFolderId: "1AbcXYZ", // raccourci si un seul dossier
+//   driveFolderUrl: "https://drive.google.com/drive/folders/1AbcXYZ" // idem mais via URL
 // }
 };
 
@@ -301,6 +377,7 @@ function applyClientConfig(slug, options = {}) {
   const filter = (configEntry && configEntry.filterByFormula)
     || (autoFilter && label ? `LOWER({${formulaField}}) = '${escapeFormulaValue(label.toLowerCase())}'` : "");
   const greeting = configEntry && configEntry.greeting ? configEntry.greeting : null;
+  const driveFolders = normalizeDriveFolders(configEntry);
 
   return {
     apiKey,
@@ -310,7 +387,8 @@ function applyClientConfig(slug, options = {}) {
     filterByFormula: filter,
     label,
     accessKey: computedAccessKey,
-    greeting
+    greeting,
+    driveFolders
   };
 }
 
@@ -665,6 +743,18 @@ const summaryBody = document.getElementById("summaryBody");
 const clientBadge = document.getElementById("clientBadge");
 const clientTitle = document.getElementById("clientTitle");
 const clientGreeting = document.getElementById("clientGreeting");
+const clientNavLinks = Array.from(document.querySelectorAll(".client-nav-link[data-client-view]"));
+const clientScrollLinks = Array.from(document.querySelectorAll(".client-nav-link[data-scroll-target]"));
+const clientViewSections = Array.from(document.querySelectorAll(".client-view[data-client-view]"));
+const miniaturesContent = document.getElementById("miniaturesContent");
+const miniaturesEmbed = document.getElementById("miniaturesEmbed");
+const miniaturesDriveFrame = document.getElementById("miniaturesDriveFrame");
+const miniaturesExternalLink = document.getElementById("miniaturesExternalLink");
+const miniaturesFolderList = document.getElementById("miniaturesFolderList");
+const miniaturesEmptyState = document.getElementById("miniaturesEmptyState");
+const miniaturesEmbedHint = document.getElementById("miniaturesEmbedHint");
+const miniaturesEmbedTitle = document.getElementById("miniaturesEmbedTitle");
+const miniaturesEmbedSubtitle = document.getElementById("miniaturesEmbedSubtitle");
 const adminLogin = document.getElementById("adminLogin");
 const adminLoginForm = document.getElementById("adminLoginForm");
 const adminEmailInput = document.getElementById("adminEmail");
@@ -756,6 +846,8 @@ const kpiTrendElements = [
   adminKpiCltvDeltaEl
 ];
 let currentClientLabel = "";
+let activeClientView = "dashboard";
+let activeDriveFolderIndex = 0;
 let activeAdminClient = null;
 let discoveredClients = [];
 let activeAdminView = "dashboard";
@@ -804,6 +896,150 @@ function configureChartsTheme() {
 }
 
 configureChartsTheme();
+
+function setClientView(view) {
+  if (!clientViewSections.length) return;
+  const target = view || "dashboard";
+  let matchFound = false;
+  clientViewSections.forEach(section => {
+    if (!section) return;
+    const matches = section.dataset.clientView === target;
+    section.classList.toggle("active", matches);
+    if (matches) matchFound = true;
+  });
+  if (!matchFound) return;
+  clientNavLinks.forEach(link => {
+    if (!link) return;
+    link.classList.toggle("active", link.dataset.clientView === target);
+  });
+  activeClientView = target;
+}
+
+function resetClientView() {
+  setClientView("dashboard");
+}
+
+function configureClientNavigation() {
+  if (clientNavLinks.length) {
+    clientNavLinks.forEach(link => {
+      link.addEventListener("click", () => {
+        const targetView = link.dataset.clientView;
+        if (targetView) {
+          setClientView(targetView);
+        }
+      });
+    });
+  }
+  if (clientScrollLinks.length) {
+    clientScrollLinks.forEach(link => {
+      link.addEventListener("click", () => {
+        const selector = link.dataset.scrollTarget;
+        if (!selector) return;
+        const target = document.querySelector(selector);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    });
+  }
+  setClientView(activeClientView);
+}
+
+function updateMiniaturesLibrary(config) {
+  if (!miniaturesEmptyState || !miniaturesContent) return;
+  const folders = config && Array.isArray(config.driveFolders) ? config.driveFolders : [];
+  activeDriveFolderIndex = 0;
+  if (!folders.length) {
+    miniaturesContent.classList.add("hidden");
+    miniaturesEmptyState.classList.remove("hidden");
+    if (miniaturesFolderList) miniaturesFolderList.innerHTML = "";
+    if (miniaturesDriveFrame) {
+      miniaturesDriveFrame.src = "about:blank";
+      miniaturesDriveFrame.setAttribute("hidden", "hidden");
+    }
+    if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
+    if (miniaturesExternalLink) {
+      miniaturesExternalLink.setAttribute("aria-disabled", "true");
+      miniaturesExternalLink.removeAttribute("href");
+    }
+    return;
+  }
+  miniaturesContent.classList.remove("hidden");
+  miniaturesEmptyState.classList.add("hidden");
+  renderMiniaturesFolders(folders);
+  applyDriveFolderSelection(folders[0], 0);
+}
+
+function renderMiniaturesFolders(folders) {
+  if (!miniaturesFolderList) return;
+  miniaturesFolderList.innerHTML = "";
+  folders.forEach((folder, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "miniatures-folder-card";
+    if (index === activeDriveFolderIndex) button.classList.add("active");
+    const name = document.createElement("span");
+    name.className = "miniatures-folder-name";
+    name.textContent = folder.label || `Dossier ${index + 1}`;
+    button.appendChild(name);
+    if (folder.description) {
+      const descriptionEl = document.createElement("span");
+      descriptionEl.className = "miniatures-folder-description";
+      descriptionEl.textContent = folder.description;
+      button.appendChild(descriptionEl);
+    }
+    button.addEventListener("click", () => {
+      activeDriveFolderIndex = index;
+      applyDriveFolderSelection(folder, index);
+    });
+    miniaturesFolderList.appendChild(button);
+  });
+}
+
+function applyDriveFolderSelection(folder, index) {
+  if (!folder) return;
+  const canEmbed = Boolean(folder.embedUrl && miniaturesDriveFrame);
+  if (miniaturesEmbed) {
+    miniaturesEmbed.classList.toggle("miniatures-embed-unavailable", !canEmbed);
+  }
+  if (miniaturesDriveFrame) {
+    if (canEmbed) {
+      miniaturesDriveFrame.removeAttribute("hidden");
+      if (miniaturesDriveFrame.src !== folder.embedUrl) {
+        miniaturesDriveFrame.src = folder.embedUrl;
+      }
+    } else {
+      miniaturesDriveFrame.src = "about:blank";
+      miniaturesDriveFrame.setAttribute("hidden", "hidden");
+    }
+  }
+  if (miniaturesEmbedHint) {
+    miniaturesEmbedHint.classList.toggle("hidden", canEmbed);
+  }
+  if (miniaturesExternalLink) {
+    if (folder.url) {
+      miniaturesExternalLink.href = folder.url;
+      miniaturesExternalLink.setAttribute("aria-disabled", "false");
+    } else {
+      miniaturesExternalLink.removeAttribute("href");
+      miniaturesExternalLink.setAttribute("aria-disabled", "true");
+    }
+  }
+  if (miniaturesEmbedTitle) {
+    miniaturesEmbedTitle.textContent = folder.label || "Dossier Google Drive";
+  }
+  if (miniaturesEmbedSubtitle) {
+    miniaturesEmbedSubtitle.textContent = folder.description || "Centralisation de toutes tes miniatures livrées.";
+  }
+  if (miniaturesFolderList) {
+    Array.from(miniaturesFolderList.children).forEach((card, idx) => {
+      card.classList.toggle("active", idx === index);
+    });
+  }
+}
+
+configureClientNavigation();
+updateMiniaturesLibrary(currentClientConfig);
 
 const ADMIN_VIEW_COPY = {
   dashboard: {
@@ -879,6 +1115,8 @@ function showLoginUI() {
   updateOpenOrdersDisplay("—");
   setClientContext("");
   ensureTableInHost(clientTableHost);
+  resetClientView();
+  updateMiniaturesLibrary(null);
   if (shareBox) {
     shareBox.classList.remove("visible");
     if (shareLinkInput) shareLinkInput.value = "";
@@ -2332,6 +2570,7 @@ function handleAdminSelect(slug) {
   if (shareTitle) shareTitle.textContent = entry ? entry.label : (config.label || slugToName(normalizedSlug));
   if (shareSubtitle) shareSubtitle.textContent = `Identifiant : ${normalizedSlug}`;
   loadAirtable(config);
+  updateMiniaturesLibrary(config);
   if (shareBox) {
     const params = new URLSearchParams();
     params.set("client", normalizedSlug);
@@ -2576,9 +2815,11 @@ if (isAdminRoute) {
     ensureTableInHost(clientTableHost);
     currentClientConfig = clientConfig;
     setClientContext(clientConfig.label || slugToName(clientParam));
+    updateMiniaturesLibrary(clientConfig);
     loadAirtable(clientConfig);
   } else {
     console.warn(`Aucun client configuré ou clé invalide pour le slug « ${clientParam} ».`);
+    updateMiniaturesLibrary(null);
     if (summaryBody) {
       summaryBody.innerHTML = `<tr><td colspan="5" class="empty">Configuration client introuvable.</td></tr>`;
     }
