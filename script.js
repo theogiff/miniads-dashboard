@@ -177,7 +177,6 @@ function flattenAirtableValue(value) {
   return String(value);
 }
 
-<<<<<<< HEAD
 function extractDriveFolderId(value = "") {
   if (!value) return "";
   const trimmed = String(value).trim();
@@ -246,15 +245,6 @@ function normalizeDriveFolders(configEntry) {
       if (!folder) return false;
       return arr.findIndex(item => item && item.id === folder.id && item.url === folder.url) === index;
     });
-=======
-function escapeHtml(value = "") {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
->>>>>>> 7b58e5f28eeed14f58043dc492004352014dc6c9
 }
 
 // --- Configuration multi-clients ---
@@ -786,13 +776,6 @@ const clientTableHost = document.getElementById("clientTableHost");
 const adminTableHost = document.getElementById("adminTableHost");
 const adminTablePlaceholder = document.getElementById("adminTablePlaceholder");
 const tableSection = document.getElementById("tableSection");
-const miniadsGallerySection = document.getElementById("miniadsGallerySection");
-const miniadsGrid = document.getElementById("miniadsGrid");
-const miniadsGalleryStatus = document.getElementById("miniadsGalleryStatus");
-const miniadsGalleryMessage = document.getElementById("miniadsGalleryMessage");
-const miniadsFallbackButton = document.getElementById("miniadsFallbackButton");
-const miniadsSearchInput = document.getElementById("miniadsSearch");
-const miniadsFinalChip = document.getElementById("miniadsFilterFinal");
 const adminTopTitle = document.getElementById("adminTopTitle");
 const adminTopSubtitle = document.getElementById("adminTopSubtitle");
 const adminNavLinks = Array.from(document.querySelectorAll(".sidebar-link[data-admin-view]"));
@@ -898,234 +881,6 @@ const agencyState = {
 };
 let agencyInitialized = false;
 let agencyLoading = false;
-
-const driveState = {
-  all: [],
-  onlyFinal: false,
-  folderLink: miniadsGallerySection ? (miniadsGallerySection.dataset.driveParent || "") : ""
-};
-let driveListenersBound = false;
-
-function setGalleryState({ message = "", tone = "info", link = "" } = {}) {
-  if (!miniadsGalleryStatus) return;
-  miniadsGalleryStatus.classList.remove("is-error", "is-empty");
-  if (!message) {
-    miniadsGalleryStatus.classList.add("hidden");
-    if (miniadsGalleryMessage) miniadsGalleryMessage.textContent = "";
-  } else {
-    if (miniadsGalleryMessage) miniadsGalleryMessage.textContent = message;
-    miniadsGalleryStatus.classList.remove("hidden");
-    if (tone === "error") {
-      miniadsGalleryStatus.classList.add("is-error");
-    } else if (tone === "empty") {
-      miniadsGalleryStatus.classList.add("is-empty");
-    }
-  }
-
-  if (miniadsFallbackButton) {
-    if (link) {
-      miniadsFallbackButton.classList.remove("hidden");
-      miniadsFallbackButton.href = link;
-    } else {
-      miniadsFallbackButton.classList.add("hidden");
-      miniadsFallbackButton.href = "#";
-    }
-  }
-}
-
-function createGallerySkeletonCard() {
-  const card = document.createElement("article");
-  card.className = "miniads-card miniads-card--skeleton";
-  card.innerHTML = `
-    <div class="miniads-card-thumb miniads-skeleton"></div>
-    <div class="miniads-card-body">
-      <div class="miniads-skeleton miniads-skeleton-text miniads-skeleton-text--medium"></div>
-      <div class="miniads-skeleton miniads-skeleton-text miniads-skeleton-text--short"></div>
-    </div>
-  `;
-  return card;
-}
-
-function showGallerySkeleton(count = 6) {
-  if (!miniadsGrid) return;
-  miniadsGrid.innerHTML = "";
-  const skeletonCount = Math.max(4, Math.min(8, count));
-  for (let i = 0; i < skeletonCount; i++) {
-    miniadsGrid.appendChild(createGallerySkeletonCard());
-  }
-  setGalleryState({ message: "Chargement des miniatures…", tone: "info", link: driveState.folderLink });
-}
-
-function formatDriveDate(value) {
-  if (!value) return "Date inconnue";
-  const dt = new Date(value);
-  if (Number.isNaN(dt.getTime())) return "Date inconnue";
-  try {
-    return dt.toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" });
-  } catch (err) {
-    return dt.toISOString();
-  }
-}
-
-function renderDriveCard(file) {
-  const card = document.createElement("article");
-  card.className = "miniads-card";
-  const previewLink = file.webViewLink || driveState.folderLink || "#";
-  const downloadLink = file.webContentLink || file.webViewLink || driveState.folderLink || "#";
-  const badge = file.isFinal ? '<span class="miniads-card-badge">FINAL</span>' : "";
-  const thumbnail = file.thumbnailLink
-    ? `<img src="${file.thumbnailLink}" alt="Miniature ${escapeHtml(file.name)}" loading="lazy" referrerpolicy="no-referrer" />`
-    : '<div class="miniads-skeleton" style="height:100%;width:100%;"></div>';
-
-  card.innerHTML = `
-    <div class="miniads-card-thumb">${thumbnail}${badge}</div>
-    <div class="miniads-card-body">
-      <h3 class="miniads-card-title">${escapeHtml(file.name)}</h3>
-      <p class="miniads-card-meta">Modifié le ${formatDriveDate(file.modifiedTime)}</p>
-    </div>
-    <div class="miniads-card-actions">
-      <a class="miniads-btn miniads-btn--ghost" href="${previewLink}" target="_blank" rel="noopener">Aperçu</a>
-      <a class="miniads-btn miniads-btn--solid" href="${downloadLink}" target="_blank" rel="noopener">Télécharger</a>
-    </div>
-  `;
-
-  return card;
-}
-
-function getFilteredDriveFiles() {
-  const term = (miniadsSearchInput && miniadsSearchInput.value ? miniadsSearchInput.value : "").trim().toLowerCase();
-  return driveState.all.filter(file => {
-    if (!file) return false;
-    if (term && !file.name.toLowerCase().includes(term)) return false;
-    if (driveState.onlyFinal && !file.isFinal) return false;
-    return true;
-  });
-}
-
-function renderDriveFiles() {
-  if (!miniadsGrid) return;
-  miniadsGrid.innerHTML = "";
-
-  if (!driveState.all.length) {
-    setGalleryState({
-      message: "Aucune miniature disponible pour le moment.",
-      tone: "empty",
-      link: driveState.folderLink
-    });
-    return;
-  }
-
-  const files = getFilteredDriveFiles();
-  if (!files.length) {
-    setGalleryState({
-      message: "Aucun résultat ne correspond à votre recherche.",
-      tone: "empty",
-      link: driveState.folderLink
-    });
-    return;
-  }
-
-  setGalleryState({ message: "", tone: "info", link: "" });
-  files.forEach(file => {
-    miniadsGrid.appendChild(renderDriveCard(file));
-  });
-}
-
-async function loadDriveFiles(clientId) {
-  if (!clientId) {
-    if (miniadsGrid) miniadsGrid.innerHTML = "";
-    setGalleryState({ message: "Client non spécifié.", tone: "error", link: driveState.folderLink });
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/client/${encodeURIComponent(clientId)}/files`, {
-      headers: { Accept: "application/json" }
-    });
-
-    if (!response.ok) {
-      let fallbackLink = driveState.folderLink;
-      let errorMessage = `Impossible de charger les miniatures (${response.status})`;
-      try {
-        const payload = await response.json();
-        if (payload && typeof payload === "object") {
-          if (payload.error) errorMessage = payload.error;
-          if (payload.folder && payload.folder.webViewLink) {
-            fallbackLink = payload.folder.webViewLink;
-            driveState.folderLink = fallbackLink;
-          }
-        }
-      } catch (err) {
-        // ignore parse errors
-      }
-      if (miniadsGrid) miniadsGrid.innerHTML = "";
-      setGalleryState({ message: errorMessage, tone: "error", link: fallbackLink });
-      return;
-    }
-
-    const payload = await response.json();
-    const files = Array.isArray(payload?.files)
-      ? payload.files
-      : Array.isArray(payload)
-        ? payload
-        : [];
-    const folderLink = payload?.folder?.webViewLink;
-    if (folderLink) {
-      driveState.folderLink = folderLink;
-    }
-
-    driveState.all = files
-      .filter(file => file && file.id && file.name)
-      .map(file => ({
-        ...file,
-        isFinal: /_FINAL/i.test(file.name),
-        modifiedTime: file.modifiedTime || null
-      }))
-      .sort((a, b) => {
-        const timeA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
-        const timeB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
-        return timeB - timeA;
-      });
-
-    renderDriveFiles();
-  } catch (error) {
-    console.error("Erreur lors du chargement des fichiers Drive", error);
-    if (miniadsGrid) miniadsGrid.innerHTML = "";
-    setGalleryState({
-      message: "Impossible de charger les miniatures pour le moment.",
-      tone: "error",
-      link: driveState.folderLink
-    });
-  }
-}
-
-function initializeDriveGallery(clientId) {
-  if (!miniadsGallerySection) return;
-  miniadsGallerySection.classList.remove("hidden");
-  driveState.all = [];
-  driveState.onlyFinal = false;
-  if (miniadsFinalChip) miniadsFinalChip.setAttribute("aria-pressed", "false");
-  driveState.folderLink = miniadsGallerySection.dataset.driveParent || "";
-
-  if (!driveListenersBound) {
-    if (miniadsSearchInput) {
-      miniadsSearchInput.addEventListener("input", () => {
-        renderDriveFiles();
-      });
-    }
-    if (miniadsFinalChip) {
-      miniadsFinalChip.addEventListener("click", () => {
-        driveState.onlyFinal = !driveState.onlyFinal;
-        miniadsFinalChip.setAttribute("aria-pressed", driveState.onlyFinal ? "true" : "false");
-        renderDriveFiles();
-      });
-    }
-    driveListenersBound = true;
-  }
-
-  showGallerySkeleton(6);
-  loadDriveFiles(clientId);
-}
 
 function ensureTableInHost(host) {
   if (!host || !tableSection) return;
@@ -3062,7 +2817,6 @@ if (isAdminRoute) {
     setClientContext(clientConfig.label || slugToName(clientParam));
     updateMiniaturesLibrary(clientConfig);
     loadAirtable(clientConfig);
-    initializeDriveGallery(clientParam);
   } else {
     console.warn(`Aucun client configuré ou clé invalide pour le slug « ${clientParam} ».`);
     updateMiniaturesLibrary(null);
