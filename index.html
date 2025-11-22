@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Miniads — Dashboard Client</title>
   <link rel="stylesheet" href="./style.css"/>
+  <script>
+    // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
+    window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
+  </script>
 </head>
 <body>
   <div id="clientContainer" class="client-container">
@@ -22,12 +26,13 @@
             <span class="client-nav-label">Tableau de bord</span>
             <span class="client-nav-pill">Actif</span>
           </button>
-          <button type="button" class="client-nav-link" data-scroll-target="#tableSection">
-            <span class="client-nav-label">Commandes</span>
-          </button>
           <button type="button" class="client-nav-link" data-client-view="miniatures">
             <span class="client-nav-label">Mes miniatures</span>
             <span class="client-nav-pill">Actif</span>
+          </button>
+          <button type="button" class="client-nav-link" data-client-view="extension-miniads">
+            <span class="client-nav-label">Extension Miniads</span>
+            <span class="client-nav-pill">Nouveau</span>
           </button>
         </nav>
         <div class="client-sidebar-footer">
@@ -92,6 +97,11 @@
             <span class="miniatures-pill">Drive sécurisé</span>
             <h2 id="miniaturesTitle">Mes miniatures</h2>
             <p id="miniaturesIntro">Accède à toutes tes miniatures livrées, centralisées dans Google Drive.</p>
+            <div class="mini-switch">
+              <button class="switch-btn active" data-view="folders">Par dossiers</button>
+              <button class="switch-btn" data-view="gallery">Galerie</button>
+            </div>
+            <div id="miniaturesGrid" class="mini-grid"></div>
           </div>
           <div class="miniatures-content hidden" id="miniaturesContent">
             <article class="miniatures-embed card" id="miniaturesEmbed">
@@ -113,12 +123,74 @@
               <div id="miniaturesFolderList" class="miniatures-folder-list"></div>
             </div>
           </div>
-          <div class="miniatures-empty card" id="miniaturesEmptyState">
-            <h3>Dossier en cours de configuration</h3>
-            <p>Ton accès Drive sera synchronisé ici dès que tes miniatures auront été ajoutées.</p>
-            <p>Besoin d’un lien immédiat ? Contacte-nous sur <a href="mailto:contact@miniads.fr">contact@miniads.fr</a>.</p>
+        </section>
+
+        <section class="client-view extension-view" id="clientExtensionView" data-client-view="extension-miniads" aria-labelledby="extensionTitle">
+          <div class="extension-hero card">
+            <div class="extension-hero-text">
+              <span class="extension-pill">Extension Chrome</span>
+              <h2 id="extensionTitle">Installer l’extension Miniads</h2>
+              <p class="extension-subtitle">
+                Testez vos miniatures directement dans un faux feed YouTube, partagez vos essais et gagnez du temps sur vos validations.
+              </p>
+              <ul class="extension-list">
+                <li>Précharge vos visuels depuis “Mes miniatures”.</li>
+                <li>Recherche de chaînes YouTube intégrée.</li>
+                <li>Affichage desktop, mobile et suggestions.</li>
+              </ul>
+              <div class="extension-actions">
+                <button type="button" class="btn extension-btn" id="extensionInstallBtn">Installer l’extension</button>
+                <a class="btn btn-secondary extension-btn-secondary" id="extensionDocBtn" href="./miniads-claude/preview.html" target="_blank" rel="noopener">Accéder à l’extension</a>
+              </div>
+            </div>
+            <div class="extension-hero-visual">
+              <div class="extension-visual-blob"></div>
+              <img src="./logo.svg" alt="Logo Miniads" class="extension-logo">
+            </div>
+          </div>
+
+          <div class="extension-body">
+            <div class="extension-grid">
+              <article class="extension-card">
+                <div class="extension-card-icon">⚡️</div>
+                <h3>Gain de temps</h3>
+                <p>Ouvrez le feed d’un clic depuis “Mes miniatures”, sans télécharger ni recharger vos visuels.</p>
+              </article>
+              <article class="extension-card">
+                <div class="extension-card-icon">🔍</div>
+                <h3>Recherche chaîne YouTube</h3>
+                <p>Saisissez ou sélectionnez vos chaînes pour tester vos thumbnails aux côtés de contenus réels.</p>
+              </article>
+              <article class="extension-card">
+                <div class="extension-card-icon">🖥️</div>
+                <h3>Multi-contextes</h3>
+                <p>Basculer entre desktop, mobile et suggestions pour vérifier l’impact partout.</p>
+              </article>
+              <article class="extension-card">
+                <div class="extension-card-icon">📊</div>
+                <h3>Prêt pour vos clients</h3>
+                <p>Montrez une preview “comme sur YouTube” pour valider plus vite vos créations.</p>
+              </article>
+            </div>
+
+            <div class="extension-steps card">
+              <div class="extension-steps-header">
+                <h3>Comment l’installer ?</h3>
+                <p>Suivez ces étapes (2 minutes) et testez votre prochaine miniature.</p>
+              </div>
+              <ol class="extension-steps-list">
+                <li>Ouvrez le Chrome Web Store via le bouton “Installer l’extension”.</li>
+                <li>Ajoutez l’extension Miniads et épinglez-la dans Chrome.</li>
+                <li>Dans “Mes miniatures”, cliquez sur “Voir sur le feed YouTube” pour précharger votre visuel.</li>
+              </ol>
+              <div class="extension-inline-cta">
+                <button type="button" class="btn extension-btn" id="extensionInstallBtnInline">Installer maintenant</button>
+                <span class="extension-note">Besoin d’aide ? contact@miniads.fr</span>
+              </div>
+            </div>
           </div>
         </section>
+
       </main>
     </div>
   </div>
@@ -133,7 +205,6 @@
         <button type="button" class="sidebar-link active" data-admin-view="dashboard">Dashboard</button>
         <button type="button" class="sidebar-link" data-admin-view="insights">Insights &amp; Performances</button>
         <button type="button" class="sidebar-link" data-admin-view="clients">Mes clients</button>
-        <button type="button" class="sidebar-link" data-admin-view="extension">Extension YouTube</button>
       </nav>
     </aside>
 
@@ -366,6 +437,26 @@
   <footer class="foot">
     <small>© Miniads</small>
   </footer>
+
+  <div id="miniaturePip" class="mini-pip" aria-hidden="true">
+    <div class="mini-pip-backdrop" data-pip-close></div>
+    <div class="mini-pip-dialog" role="dialog" aria-modal="true" aria-labelledby="miniaturePipTitle">
+      <button type="button" class="mini-pip-close" data-pip-close aria-label="Fermer l’aperçu">×</button>
+      <div class="mini-pip-figure">
+        <img id="miniaturePipImage" alt="" />
+      </div>
+      <div class="mini-pip-meta">
+        <div>
+          <h3 id="miniaturePipTitle">Miniature</h3>
+          <p id="miniaturePipSubtitle">Aperçu plein écran</p>
+        </div>
+        <div class="mini-pip-actions">
+          <a id="miniaturePipOpen" class="mini-card-btn mini-card-btn-primary" href="#" target="_blank" rel="noopener">Ouvrir</a>
+          <a id="miniaturePipDownload" class="mini-card-btn" href="#" target="_blank" rel="noopener">Télécharger</a>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="admin-login" id="adminLogin">
     <form id="adminLoginForm" class="admin-login-card">

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Miniads - YouTube Thumbnail Preview",
+  "version": "1.0",
+  "description": "Prévisualisez vos miniatures YouTube dans un feed réel",
+  "permissions": [
+    "storage"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "preview.html",
+        "preview.js",
+        "popup.html",
+        "popup.js",
+        "logo.svg"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Miniads - YouTube Thumbnail Preview</title>
+  <style>
+    :root {
+      --accent: #ff9500;
+      --ink-strong: #0f0f0f;
+      --ink-soft: #666;
+      --card: #fff;
+      --muted: #f5f5f5;
+      --border: #e8e8e8;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', 'Roboto', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      overflow: hidden;
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Panneau gauche */
+    .left-panel {
+      width: 420px;
+      background: #fff;
+      padding: 30px;
+      overflow-y: auto;
+      border-right: 1px solid #e8e8e8;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #1a1a1a;
+    }
+
+    .logo img {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: #fff;
+      padding: 6px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .logo-title {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+
+    .logo-subtitle {
+      font-size: 13px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .section {
+      margin-bottom: 25px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .thumbnail-container {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #fafafa;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      position: relative;
+      cursor: pointer;
+      border: 2px dashed #e0e0e0;
+      transition: all 0.3s;
+    }
+
+    .thumbnail-container:hover {
+      border-color: #ff9500;
+      background: #fff5e6;
+    }
+
+    .thumbnail-container.has-image {
+      border: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .thumbnail-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .upload-prompt {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #999;
+      pointer-events: none;
+    }
+
+    .upload-prompt.hidden {
+      display: none;
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+      color: #ff9500;
+    }
+
+    .info-box {
+      background: #fafafa;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #f0f0f0;
+    }
+
+    .info-label {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .label-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: #777;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .label-action::after {
+      content: '↗';
+      font-size: 10px;
+      opacity: 0.7;
+      transform: translateY(-1px);
+    }
+
+    .label-action:hover {
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      color: #1a1a1a;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: 'Inter', 'Roboto', Arial, sans-serif;
+      transition: all 0.3s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #ff9500;
+      box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .channel-search-trigger {
+      width: 100%;
+      border: 1px dashed #e0e0e0;
+      background: linear-gradient(135deg, #fff, #f9fbff);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #444;
+      font-weight: 600;
+      text-align: left;
+      transition: all 0.25s ease;
+      box-shadow: 0 10px 30px rgba(17, 23, 41, 0.05);
+    }
+
+    .channel-search-trigger span:first-child {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(255, 149, 0, 0.08);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .channel-search-trigger:hover {
+      border-color: rgba(255, 149, 0, 0.4);
+      background: #fffaf3;
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(255, 149, 0, 0.16);
+    }
+
+    .channel-preview {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: linear-gradient(120deg, rgba(255, 149, 0, 0.12), rgba(255, 149, 0, 0.06));
+      border: 1px solid rgba(255, 149, 0, 0.25);
+      box-shadow: 0 10px 30px rgba(255, 149, 0, 0.12);
+    }
+
+    .channel-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .channel-preview-list .channel-preview {
+      margin-top: 0;
+    }
+
+    .channel-preview-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      object-fit: cover;
+      background: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+    }
+
+    .channel-preview-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .channel-preview-name {
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .channel-preview-subscribers {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .channel-preview-remove {
+      margin-left: auto;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: #fff;
+      color: #999;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .channel-preview-remove:hover {
+      background: #ffeede;
+      color: #c75b00;
+      border-color: rgba(255, 149, 0, 0.5);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #ff9500;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      box-shadow: 0 2px 8px rgba(255, 149, 0, 0.2);
+    }
+
+    .btn:hover {
+      background: #ff8800;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      color: #666;
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: #fafafa;
+      border-color: #d0d0d0;
+      transform: translateY(-1px);
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-small {
+      margin-top: 0;
+      font-size: 13px;
+      padding: 10px;
+    }
+
+    .view-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      background: #fafafa;
+      padding: 6px;
+      border-radius: 10px;
+    }
+
+    .view-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .view-btn:hover {
+      background: #fff;
+      color: #1a1a1a;
+    }
+
+    .view-btn.active {
+      background: #ff9500;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(255, 149, 0, 0.2);
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafafa;
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .theme-toggle:hover {
+      background: #fff;
+      border-color: #e0e0e0;
+    }
+
+    .theme-toggle span {
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      background: #e0e0e0;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch.active {
+      background: #ff9500;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.3s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .toggle-switch.active .toggle-slider {
+      transform: translateX(22px);
+    }
+
+    /* Mode clair */
+    body.light-mode {
+      background: #f5f5f5;
+      color: #1a1a1a;
+    }
+
+    body.light-mode .left-panel {
+      background: #fff;
+      border-right-color: #e8e8e8;
+    }
+
+    body.light-mode .right-panel {
+      background: #f5f5f5;
+    }
+
+    /* Mode sombre */
+    body.dark-mode {
+      background: #0f0f0f;
+      color: #fff;
+    }
+
+    body.dark-mode .left-panel {
+      background: #1a1a1a;
+      border-right-color: #2a2a2a;
+    }
+
+    body.dark-mode .right-panel {
+      background: #0f0f0f;
+    }
+
+    body.dark-mode .logo {
+      color: #fff;
+    }
+
+    body.dark-mode .logo-subtitle {
+      color: #cfcfcf;
+    }
+
+    body.dark-mode .section-title {
+      color: #999;
+    }
+
+    body.dark-mode .info-box {
+      background: #222;
+      border-color: #2a2a2a;
+    }
+
+    body.dark-mode .info-label {
+      color: #999;
+    }
+
+    body.dark-mode input[type="text"] {
+      background: #222;
+      border-color: #333;
+      color: #fff;
+    }
+
+    body.dark-mode input[type="text"]:focus {
+      border-color: #ff9500;
+    }
+
+    body.dark-mode .thumbnail-container {
+      background: #222;
+      border-color: #333;
+    }
+
+    body.dark-mode .thumbnail-container:hover {
+      border-color: #ff9500;
+      background: #2a2a2a;
+    }
+
+    body.dark-mode .btn-secondary {
+      background: #222;
+      border-color: #333;
+      color: #999;
+    }
+
+    body.dark-mode .btn-secondary:hover {
+      background: #2a2a2a;
+      border-color: #3a3a3a;
+    }
+
+    body.dark-mode .view-selector {
+      background: #222;
+    }
+
+    body.dark-mode .view-btn {
+      color: #999;
+    }
+
+    body.dark-mode .view-btn:hover {
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    body.dark-mode .theme-toggle {
+      background: #222;
+      border-color: #2a2a2a;
+    }
+
+    body.dark-mode .theme-toggle:hover {
+      background: #2a2a2a;
+      border-color: #333;
+    }
+
+    body.dark-mode .theme-toggle span {
+      color: #999;
+    }
+
+    body.dark-mode .feed-header {
+      border-bottom-color: #2a2a2a;
+    }
+
+    body.dark-mode .feed-header h1 {
+      color: #fff;
+    }
+
+    body.dark-mode .feed-header p {
+      color: #999;
+    }
+
+    body.dark-mode .video-thumbnail {
+      background: #222;
+    }
+
+    body.dark-mode .video-title {
+      color: #fff;
+    }
+
+    body.dark-mode .video-meta {
+      color: #999;
+    }
+
+    body.dark-mode .channel-search-trigger {
+      background: linear-gradient(135deg, #1a1a1a, #161616);
+      border-color: #2a2a2a;
+      color: #e6e6e6;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    body.dark-mode .channel-search-trigger:hover {
+      background: #1f1a13;
+      border-color: rgba(255, 149, 0, 0.6);
+    }
+
+    body.dark-mode .channel-preview {
+      background: linear-gradient(120deg, rgba(255, 149, 0, 0.18), rgba(255, 149, 0, 0.08));
+      border-color: rgba(255, 149, 0, 0.4);
+    }
+
+    body.dark-mode .channel-preview-name {
+      color: #fff;
+    }
+
+    body.dark-mode .channel-preview-subscribers {
+      color: #cfcfcf;
+    }
+
+    body.dark-mode .channel-preview-remove {
+      background: #222;
+      border-color: #333;
+      color: #aaa;
+    }
+
+    body.dark-mode .channel-preview-remove:hover {
+      background: #2b1f12;
+      color: #ff9500;
+      border-color: rgba(255, 149, 0, 0.7);
+    }
+
+    body.dark-mode ::-webkit-scrollbar-track {
+      background: #0f0f0f;
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb {
+      background: #333;
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb:hover {
+      background: #444;
+    }
+
+    /* Panneau droit - Feed YouTube */
+    .right-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px;
+      background: #f5f5f5;
+    }
+
+    .feed-header {
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .feed-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+    }
+
+    .feed-header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .video-card {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .video-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .video-thumbnail {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #fafafa;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .video-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .duration {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .video-info {
+      display: flex;
+      gap: 12px;
+    }
+
+    .channel-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff9500, #ff6b00);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .video-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .video-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      color: #1a1a1a;
+    }
+
+    .video-meta {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .custom-video .video-thumbnail {
+      border: 2px solid #ff9500;
+      box-shadow: 0 4px 16px rgba(255, 149, 0, 0.2);
+    }
+
+    .badge {
+      display: inline-block;
+      background: #ff9500;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 8px;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f5f5f5;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #d0d0d0;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #b0b0b0;
+    }
+
+    /* Vue mobile */
+    body.mobile-view .video-grid {
+      grid-template-columns: 1fr;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    /* Vue onglet */
+    body.tab-view .video-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    body.tab-view .video-card {
+      display: flex;
+      gap: 15px;
+    }
+
+    body.tab-view .video-thumbnail {
+      width: 240px;
+      flex-shrink: 0;
+      margin-bottom: 0;
+    }
+
+    body.tab-view .video-info {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Modals de recherche */
+    .search-modal-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 12, 22, 0.55);
+      backdrop-filter: blur(14px);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      padding: 18px;
+    }
+
+    .search-modal-overlay.show {
+      opacity: 1;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    .search-modal-wrapper {
+      width: min(520px, 100%);
+    }
+
+    .search-modal-box {
+      position: relative;
+      background: linear-gradient(145deg, #0f0f0f, #121722);
+      color: #fff;
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .search-modal-box::before {
+      content: '';
+      position: absolute;
+      inset: -30% 40% auto auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(255, 149, 0, 0.45), rgba(255, 149, 0, 0));
+      filter: blur(12px);
+      opacity: 0.8;
+      z-index: -1;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 149, 0, 0.18);
+      border-color: rgba(255, 149, 0, 0.5);
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    .modal-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(255, 149, 0, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 14px;
+      color: #ffbf66;
+      border: 1px solid rgba(255, 149, 0, 0.25);
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+
+    .modal-subtitle {
+      color: #c8cfdb;
+      margin-bottom: 18px;
+    }
+
+    .modal-search-box {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 14px;
+      transform: translateY(-50%);
+      font-size: 16px;
+      opacity: 0.7;
+    }
+
+    .modal-search-input {
+      width: 100%;
+      padding: 14px 14px 14px 38px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      font-size: 15px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-search-input:focus {
+      outline: none;
+      border-color: rgba(255, 149, 0, 0.65);
+      box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.15);
+    }
+
+    .modal-results {
+      max-height: 340px;
+      overflow-y: auto;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 6px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .result-item:hover {
+      background: rgba(255, 149, 0, 0.14);
+      border-color: rgba(255, 149, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .result-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      object-fit: cover;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    }
+
+    .result-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .result-name {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .result-subscribers {
+      color: #c8cfdb;
+      font-size: 13px;
+    }
+
+    .results-empty {
+      text-align: center;
+      padding: 36px 12px;
+      color: #c8cfdb;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .empty-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px dashed rgba(255, 255, 255, 0.16);
+      font-size: 20px;
+    }
+
+    .empty-text {
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+      .search-modal-box {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="left-panel">
+    <div class="logo">
+      <img src="logo.svg" alt="Miniads">
+      <div class="logo-text">
+        <div class="logo-title">Miniads</div>
+        <div class="logo-subtitle">YouTube Thumbnail Preview</div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Miniature</div>
+      <input type="file" id="thumbnailInput" accept="image/*">
+      <div class="thumbnail-container" id="thumbnailContainer">
+        <img id="userThumbnail" alt="Your thumbnail" style="display: none;">
+        <div class="upload-prompt" id="uploadPrompt">
+          <div class="upload-icon">📤</div>
+          <div>Cliquez pour uploader</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="info-box">
+        <div class="info-label">Titre de la vidéo</div>
+        <input type="text" id="titleInput" placeholder="Votre titre ici...">
+      </div>
+      <div class="info-box">
+        <div 
+          class="info-label label-action" 
+          data-modal-id="channelSearchModal" 
+          data-input-id="channelSearchInput"
+        >
+          Nom de la chaîne
+        </div>
+        <button class="channel-search-trigger" id="channelSearchBtn" type="button">
+          <span>🔍</span>
+          <span id="channelSearchPlaceholder">Rechercher une chaîne...</span>
+        </button>
+        <div id="selectedChannelPreview"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Position</div>
+      <div class="btn-group">
+        <button class="btn btn-small" id="randomPosBtn">🎲 Aléatoire</button>
+        <button class="btn btn-small btn-secondary" id="topPosBtn">⬆️ En haut</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Affichage</div>
+      <div class="view-selector">
+        <button class="view-btn active" data-view="feed">📱 Feed</button>
+        <button class="view-btn" data-view="mobile">📲 Mobile</button>
+        <button class="view-btn" data-view="tab">🖥️ Onglet</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Source des vidéos</div>
+      <div class="info-box">
+        <div 
+          class="info-label label-action" 
+          data-modal-id="videoSourceSearchModal" 
+          data-input-id="videoSourceSearchInput"
+        >
+          Chaîne YouTube (optionnel)
+        </div>
+        <button class="channel-search-trigger" id="videoSourceSearchBtn" type="button">
+          <span>🔍</span>
+          <span id="videoSourceSearchPlaceholder">Rechercher une chaîne...</span>
+        </button>
+        <div id="selectedVideoSourcePreview"></div>
+      </div>
+      <div style="font-size: 11px; color: #999; margin-top: 8px; line-height: 1.5;">
+        💡 Ajoutez plusieurs chaînes pour mixer leurs vidéos dans le feed (ex: MrBeast, Squeezie...)
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="theme-toggle" id="themeToggle">
+        <span>☀️ Mode clair</span>
+        <div class="toggle-switch active" id="toggleSwitch">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <button class="btn" id="refreshBtn">🔄 Rafraîchir</button>
+      <button class="btn btn-secondary" id="clearBtn">🗑️ Effacer</button>
+    </div>
+
+    <div class="section">
+      <div class="info-box">
+        <div class="info-label">💡 Astuce</div>
+        <div style="font-size: 13px; color: #666; line-height: 1.6; margin-top: 8px;">
+          Testez votre miniature dans différents contextes et positions pour optimiser son impact visuel.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="feed-header">
+      <h1>Feed YouTube</h1>
+      <p>Découvrez comment votre miniature apparaît parmi les vidéos recommandées</p>
+    </div>
+    
+    <div class="video-grid" id="videoGrid"></div>
+  </div>
+
+  <!-- Modal de recherche de chaîne -->
+  <div class="search-modal-overlay" id="channelSearchModal">
+    <div class="search-modal-wrapper">
+      <div class="search-modal-box">
+        <button class="modal-close" type="button" data-close-modal="channelSearchModal">×</button>
+        <div class="modal-icon">
+          <span>🔍</span>
+        </div>
+        <h2 class="modal-title">Rechercher une chaîne</h2>
+        <p class="modal-subtitle">Trouvez et sélectionnez votre chaîne YouTube</p>
+        
+        <div class="modal-search-box">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            id="channelSearchInput" 
+            class="modal-search-input" 
+            placeholder="Tapez pour rechercher..."
+            autocomplete="off"
+          >
+        </div>
+        
+        <div class="modal-results" id="channelSearchResults">
+          <div class="results-empty">
+            <div class="empty-icon">📺</div>
+            <div class="empty-text">Recherchez une chaîne YouTube</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de recherche de source vidéo -->
+  <div class="search-modal-overlay" id="videoSourceSearchModal">
+    <div class="search-modal-wrapper">
+      <div class="search-modal-box">
+        <button class="modal-close" type="button" data-close-modal="videoSourceSearchModal">×</button>
+        <div class="modal-icon">
+          <span>📺</span>
+        </div>
+        <h2 class="modal-title">Source des vidéos</h2>
+        <p class="modal-subtitle">Chargez les vidéos d'une chaîne spécifique</p>
+        
+        <div class="modal-search-box">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            id="videoSourceSearchInput" 
+            class="modal-search-input" 
+            placeholder="Tapez pour rechercher..."
+            autocomplete="off"
+          >
+        </div>
+        
+        <div class="modal-results" id="videoSourceSearchResults">
+          <div class="results-empty">
+            <div class="empty-icon">📺</div>
+            <div class="empty-text">Recherchez une chaîne YouTube</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="preview.js"></script>
+</body>
+</html>

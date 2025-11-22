@@ -247,6 +247,17 @@ function normalizeDriveFolders(configEntry) {
     });
 }
 
+function stripMiniaturesPrefix(value = "") {
+  if (!value) return "";
+  return value.replace(/^miniatures?\s*-\s*/i, "").trim();
+}
+
+function formatDriveClientLabel(value = "") {
+  const trimmed = stripMiniaturesPrefix(value) || value || "";
+  const fallback = trimmed.trim();
+  return fallback || "Client Miniads";
+}
+
 // --- Configuration multi-clients ---
 // Renseigne ici ton token d'accès Airtable (lecture seule) commun à tous les clients.
 const DEFAULT_API_KEY = "patcwtLlGwr56ejaH.3366d5e270a09e8874feff12cf371bee81a82b0326a0b3e5da1ed7ced2bdb3de";
@@ -732,6 +743,35 @@ function isSameMonth(dateA, dateB = new Date()) {
   return a.getFullYear() === dateB.getFullYear() && a.getMonth() === dateB.getMonth();
 }
 
+function openInYoutubeFeed(file = {}, triggerBtn) {
+  if (!MINIADS_EXTENSION_ID) {
+    alert("Extension Miniads non configurée. Ajoutez MINIADS_EXTENSION_ID dans window pour activer le bouton.");
+    return;
+  }
+
+  const thumb = getMiniatureThumbnail(file.thumbnailLink);
+  const title = truncateText(file.name || "Votre miniature", 90);
+  const channel = getFolderLabel(file);
+  const params = new URLSearchParams({
+    thumb,
+    title,
+    channel
+  });
+
+  const url = `chrome-extension://${MINIADS_EXTENSION_ID}/preview.html?${params.toString()}`;
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = "Ouverture…";
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+  if (triggerBtn) {
+    setTimeout(() => {
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = "Voir sur le feed YouTube";
+    }, 800);
+  }
+}
+
 // --- Sélecteurs ---
 const grid = document.getElementById("grid");
 const airtableKeyInput = document.getElementById("airtableKey");
@@ -749,6 +789,815 @@ const clientViewSections = Array.from(document.querySelectorAll(".client-view[da
 const miniaturesContent = document.getElementById("miniaturesContent");
 const miniaturesEmbed = document.getElementById("miniaturesEmbed");
 const miniaturesDriveFrame = document.getElementById("miniaturesDriveFrame");
+const MINIADS_API_MODE = true; // ⬅️ active le mode API
+const MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "";
+const MINIADS_EXTENSION_INSTALL_URL = window.MINIADS_EXTENSION_INSTALL_URL
+  || (MINIADS_EXTENSION_ID
+    ? `https://chrome.google.com/webstore/detail/${MINIADS_EXTENSION_ID}`
+    : "https://chrome.google.com/webstore");
+const miniaturesGrid = document.getElementById("miniaturesGrid");
+const viewSwitchButtons = Array.from(document.querySelectorAll(".switch-btn"));
+const pipOverlay = document.getElementById("miniaturePip");
+const pipImage = document.getElementById("miniaturePipImage");
+const pipTitle = document.getElementById("miniaturePipTitle");
+const pipSubtitle = document.getElementById("miniaturePipSubtitle");
+const pipOpenLink = document.getElementById("miniaturePipOpen");
+const pipDownloadLink = document.getElementById("miniaturePipDownload");
+const extensionInstallBtn = document.getElementById("extensionInstallBtn");
+const extensionDocBtn = document.getElementById("extensionDocBtn");
+const extensionInstallBtnInline = document.getElementById("extensionInstallBtnInline");
+const topbar = document.querySelector(".topbar");
+
+async function fetchDriveFilesForClient(slug) {
+  const res = await fetch(
+    `http://localhost:3000/api/client/bySlug/${encodeURIComponent(slug)}`
+  );
+
+  if (!res.ok) throw new Error("API Drive KO");
+
+  return await res.json();
+}
+
+// === NOUVELLE PARTIE ===
+let currentFiles = [];
+
+async function displayClientMiniatures(slug) {
+  try {
+    const data = await fetchDriveFilesForClient(slug);
+
+    currentFiles = data.files || [];
+
+    setMiniaturesView("folders");
+
+  } catch (e) {
+    console.error("Erreur affichage miniatures :", e);
+    miniaturesGrid.innerHTML = "<p>Erreur lors du chargement des miniatures.</p>";
+  }
+}
+
+viewSwitchButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const view = btn.dataset.view;
+    setMiniaturesView(view);
+  });
+});
+
+function setMiniaturesView(view = "folders") {
+  viewSwitchButtons.forEach(button => {
+    button.classList.toggle("active", button.dataset.view === view);
+  });
+  if (view === "gallery") {
+    renderFilesGrid(currentFiles);
+  } else {
+    renderFolderView(currentFiles);
+  }
+}
+
+function initializeMiniaturesFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("client");
+  if (slug) {
+    displayClientMiniatures(slug);
+  }
+}
+
+initializeMiniaturesFromUrl();
+
+function openMiniaturePip(file = {}) {
+  if (!pipOverlay || !pipImage) return;
+  const src = getMiniatureThumbnail(file.thumbnailLink);
+  pipImage.src = src;
+  pipImage.alt = file.name || "Miniature";
+  if (pipTitle) pipTitle.textContent = file.name || "Miniature";
+  if (pipSubtitle) {
+    const dateText = formatDate(file.modifiedTime);
+    const folderLabel = getFolderLabel(file);
+    pipSubtitle.textContent = dateText !== "—"
+      ? `Modifié le ${dateText} • ${folderLabel}`
+      : folderLabel;
+  }
+  if (pipOpenLink) {
+    if (file.webViewLink) {
+      pipOpenLink.href = file.webViewLink;
+      pipOpenLink.removeAttribute("aria-disabled");
+    } else {
+      pipOpenLink.href = "#";
+      pipOpenLink.setAttribute("aria-disabled", "true");
+    }
+  }
+  if (pipDownloadLink) {
+    if (file.webContentLink) {
+      pipDownloadLink.href = file.webContentLink;
+      pipDownloadLink.removeAttribute("aria-disabled");
+    } else {
+      pipDownloadLink.href = "#";
+      pipDownloadLink.setAttribute("aria-disabled", "true");
+    }
+  }
+  pipOverlay.classList.add("is-visible");
+  pipOverlay.setAttribute("aria-hidden", "false");
+  const closeBtn = pipOverlay.querySelector(".mini-pip-close");
+  if (closeBtn) closeBtn.focus();
+}
+
+function closeMiniaturePip() {
+  if (!pipOverlay) return;
+  pipOverlay.classList.remove("is-visible");
+  pipOverlay.setAttribute("aria-hidden", "true");
+}
+
+if (pipOverlay) {
+  const closeButtons = pipOverlay.querySelectorAll("[data-pip-close]");
+  closeButtons.forEach(button => {
+    button.addEventListener("click", () => closeMiniaturePip());
+  });
+}
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeMiniaturePip();
+  }
+});
+
+function renderFilesGrid(files = [], { container = miniaturesGrid, emptyLabel } = {}) {
+  const targetGrid = container || miniaturesGrid;
+  if (!targetGrid) return;
+  updateMiniaturesGridMode("gallery", targetGrid);
+  targetGrid.innerHTML = "";
+
+  if (!files.length) {
+    targetGrid.innerHTML = `<div class="miniatures-empty">${emptyLabel || "Aucune miniature pour l’instant."}</div>`;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  files.forEach(file => {
+    const card = document.createElement("article");
+    card.className = "mini-card";
+
+    const thumbWrapper = document.createElement("button");
+    thumbWrapper.type = "button";
+    thumbWrapper.className = "mini-card-thumb";
+    thumbWrapper.addEventListener("click", () => openMiniaturePip(file));
+
+    const img = document.createElement("img");
+    img.alt = file.name || "Miniature";
+    img.loading = "lazy";
+    img.src = getMiniatureThumbnail(file.thumbnailLink);
+    thumbWrapper.appendChild(img);
+
+    const versionChip = extractVersion(file.name);
+    if (versionChip) {
+      const chip = document.createElement("span");
+      chip.className = "mini-card-chip";
+      chip.textContent = versionChip;
+      thumbWrapper.appendChild(chip);
+    }
+
+    const body = document.createElement("div");
+    body.className = "mini-card-body";
+
+    const textWrapper = document.createElement("div");
+    textWrapper.className = "mini-card-text";
+
+    const title = document.createElement("h3");
+    title.className = "mini-card-title";
+    title.textContent = truncateText(file.name);
+    if (file.name) title.title = file.name;
+
+    const meta = document.createElement("p");
+    meta.className = "mini-card-meta";
+    const dateSpan = document.createElement("span");
+    const formattedDate = formatDate(file.modifiedTime);
+    dateSpan.textContent = formattedDate !== "—" ? `Modifié le ${formattedDate}` : "Date inconnue";
+    const folderSpan = document.createElement("span");
+    folderSpan.textContent = getFolderLabel(file);
+    meta.append(dateSpan, folderSpan);
+
+    textWrapper.append(title, meta);
+
+    const actions = document.createElement("div");
+    actions.className = "mini-card-actions";
+
+    const feedBtn = document.createElement("button");
+    feedBtn.type = "button";
+    feedBtn.className = "mini-card-btn mini-card-btn-accent";
+    feedBtn.textContent = "Voir sur le feed YouTube";
+    feedBtn.addEventListener("click", () => openInYoutubeFeed(file, feedBtn));
+    actions.appendChild(feedBtn);
+
+    if (file.webViewLink) {
+      const previewLink = document.createElement("a");
+      previewLink.className = "mini-card-btn mini-card-btn-primary";
+      previewLink.href = file.webViewLink;
+      previewLink.target = "_blank";
+      previewLink.rel = "noopener";
+      previewLink.textContent = "Aperçu";
+      actions.appendChild(previewLink);
+    }
+
+    if (file.webContentLink) {
+      const downloadLink = document.createElement("a");
+      downloadLink.className = "mini-card-btn";
+      downloadLink.href = file.webContentLink;
+      downloadLink.target = "_blank";
+      downloadLink.rel = "noopener";
+      downloadLink.textContent = "Télécharger";
+      actions.appendChild(downloadLink);
+    }
+
+    body.append(textWrapper, actions);
+    card.append(thumbWrapper, body);
+    fragment.appendChild(card);
+  });
+
+  targetGrid.appendChild(fragment);
+}
+
+function extractVersion(name) {
+  const match = name.match(/v(\d+)/i);
+  return match ? "V" + match[1] : null;
+}
+
+function truncateText(value = "", limit = 68) {
+  const safeValue = (value || "Sans titre").trim();
+  return safeValue.length > limit ? `${safeValue.slice(0, limit - 1)}…` : safeValue;
+}
+
+function getMiniatureThumbnail(link = "") {
+  if (!link) return new URL("logo.svg", window.location.href).href;
+  const normalized = link.replace(/=s\d+(?:-[a-z])?$/i, "=s800");
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  try {
+    return new URL(normalized, window.location.href).href;
+  } catch {
+    return normalized;
+  }
+}
+
+function getFolderLabel(file = {}) {
+  const segments = getFolderSegments(file);
+  if (!segments.length) {
+    const fallback = (file.folderName || file.folder || "").trim();
+    return fallback || "Drive Miniads";
+  }
+  return segments.join(" / ");
+}
+
+function getFolderSegments(file = {}) {
+  const raw = (file.folderPath || file.folderName || file.folder || "").trim();
+  if (!raw) return [];
+  return raw
+    .split("/")
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+
+function getFolderGroupLabel(file = {}) {
+  const segments = getFolderSegments(file);
+  if (!segments.length) {
+    const fallback = (file.folderName || file.folder || "").trim();
+    return fallback || "Drive Miniads";
+  }
+  return segments[0];
+}
+
+function getSubfolderPathLabel(file = {}) {
+  const segments = getFolderSegments(file);
+  if (segments.length <= 1) return "";
+  return segments.slice(1).join(" / ");
+}
+
+const ROOT_SUBFOLDER_KEY = "__ROOT__";
+
+function getFolderAccent(label = "") {
+  const palettes = [
+    { background: "#fff7ed", accent: "#f59e0b" },
+    { background: "#fef2f2", accent: "#ef4444" },
+    { background: "#f0f9ff", accent: "#0ea5e9" },
+    { background: "#ecfdf5", accent: "#10b981" },
+    { background: "#fdf2f8", accent: "#d946ef" },
+    { background: "#eef2ff", accent: "#6366f1" },
+    { background: "#f5f3ff", accent: "#8b5cf6" }
+  ];
+  const seed = (label || "folder").split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const palette = palettes[seed % palettes.length];
+  return palette || palettes[0];
+}
+
+function updateMiniaturesGridMode(mode, target = miniaturesGrid) {
+  const grid = target || miniaturesGrid;
+  if (!grid) return;
+  grid.dataset.view = mode;
+  grid.classList.toggle("is-gallery", mode === "gallery");
+  grid.classList.toggle("is-folders", mode === "folders");
+}
+
+function buildSubfolderGroups(files = [], fallbackLabel = "Miniatures principales") {
+  const map = new Map();
+  files.forEach(file => {
+    const subLabel = getSubfolderPathLabel(file);
+    const key = subLabel || ROOT_SUBFOLDER_KEY;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(file);
+  });
+  return Array.from(map.entries()).map(([key, groupFiles]) => {
+    const sorted = [...groupFiles].sort(
+      (a, b) => new Date(b.modifiedTime || 0) - new Date(a.modifiedTime || 0)
+    );
+    const latestTimestamp = sorted.length
+      ? new Date(sorted[0].modifiedTime || 0).getTime()
+      : 0;
+    return {
+      key,
+      label: key === ROOT_SUBFOLDER_KEY ? fallbackLabel : key,
+      displayLabel: key === ROOT_SUBFOLDER_KEY ? "Miniatures principales" : key,
+      files: sorted,
+      count: sorted.length,
+      latestTimestamp
+    };
+  }).sort((a, b) => {
+    if (b.latestTimestamp !== a.latestTimestamp) {
+      return b.latestTimestamp - a.latestTimestamp;
+    }
+    return a.label.localeCompare(b.label, "fr");
+  });
+}
+
+function createFolderMiniCard(file, parentLabel) {
+  const item = document.createElement("div");
+  item.className = "folder-mini-card";
+
+  const thumb = document.createElement("div");
+  thumb.className = "folder-mini-thumb";
+  const img = document.createElement("img");
+  img.alt = file.name || "Miniature";
+  img.loading = "lazy";
+  img.src = getMiniatureThumbnail(file.thumbnailLink);
+  thumb.appendChild(img);
+
+  const info = document.createElement("div");
+  info.className = "folder-mini-info";
+  const title = document.createElement("p");
+  title.className = "folder-mini-title";
+  title.textContent = truncateText(file.name, 60);
+  if (file.name) title.title = file.name;
+  const meta = document.createElement("p");
+  meta.className = "folder-mini-meta";
+  const formatted = formatDate(file.modifiedTime);
+  const metaParts = [];
+  if (formatted !== "—") metaParts.push(`Modifié le ${formatted}`);
+  const folderPathLabel = getFolderLabel(file);
+  if (folderPathLabel && folderPathLabel !== parentLabel) {
+    metaParts.push(folderPathLabel);
+  }
+  meta.textContent = metaParts.length ? metaParts.join(" • ") : "Date inconnue";
+  info.append(title, meta);
+
+  const actions = document.createElement("div");
+  actions.className = "folder-mini-actions";
+  if (file.webViewLink) {
+    const openLink = document.createElement("a");
+    openLink.className = "mini-card-btn mini-card-btn-primary";
+    openLink.href = file.webViewLink;
+    openLink.target = "_blank";
+    openLink.rel = "noopener";
+    openLink.textContent = "Ouvrir";
+    actions.appendChild(openLink);
+  }
+  if (file.webContentLink) {
+    const downloadLink = document.createElement("a");
+    downloadLink.className = "mini-card-btn";
+    downloadLink.href = file.webContentLink;
+    downloadLink.target = "_blank";
+    downloadLink.rel = "noopener";
+    downloadLink.textContent = "Télécharger";
+    actions.appendChild(downloadLink);
+  }
+
+  item.append(thumb, info, actions);
+  return item;
+}
+
+function closeOtherFolderTiles(currentCard, scope = miniaturesGrid) {
+  const grid = scope || miniaturesGrid;
+  if (!grid || !currentCard) return;
+  const tiles = grid.querySelectorAll(".folder-tile.open");
+  tiles.forEach(tile => {
+    if (tile === currentCard) return;
+    const trigger = tile.querySelector(".folder-tile-body");
+    const panelEl = tile.querySelector(".folder-tile-panel");
+    if (!trigger || !panelEl) return;
+    trigger.setAttribute("aria-expanded", "false");
+    tile.classList.remove("open");
+    panelEl.hidden = true;
+  });
+}
+
+function closeSiblingSubfolderCards(container, currentCard) {
+  if (!container || !currentCard) return;
+  const cards = container.querySelectorAll(".subfolder-card.open");
+  cards.forEach(card => {
+    if (card === currentCard) return;
+    const head = card.querySelector(".subfolder-head");
+    const panelEl = card.querySelector(".subfolder-panel");
+    if (!head || !panelEl) return;
+    head.setAttribute("aria-expanded", "false");
+    card.classList.remove("open");
+    panelEl.hidden = true;
+  });
+}
+
+function renderFolderView(files = [], { container = miniaturesGrid, emptyLabel } = {}) {
+  const targetGrid = container || miniaturesGrid;
+  if (!targetGrid) return;
+  updateMiniaturesGridMode("folders", targetGrid);
+  targetGrid.innerHTML = "";
+
+  if (!files.length) {
+    targetGrid.innerHTML = `<div class="miniatures-empty">${emptyLabel || "Aucun dossier disponible pour l’instant."}</div>`;
+    return;
+  }
+
+  const groups = files.reduce((acc, file) => {
+    const folder = getFolderGroupLabel(file);
+    if (!acc[folder]) acc[folder] = [];
+    acc[folder].push(file);
+    return acc;
+  }, {});
+
+  const folderList = document.createElement("div");
+  folderList.className = "folder-tiles";
+
+  const folders = Object.entries(groups).map(([folderName, folderFiles]) => {
+    const sortedFiles = [...folderFiles].sort(
+      (a, b) => new Date(b.modifiedTime || 0) - new Date(a.modifiedTime || 0)
+    );
+    const latestTimestamp = sortedFiles.length
+      ? new Date(sortedFiles[0].modifiedTime || 0).getTime()
+      : 0;
+    return { folderName, folderFiles, sortedFiles, latestTimestamp };
+  });
+
+  folders
+    .sort((a, b) => {
+      if (b.latestTimestamp !== a.latestTimestamp) return b.latestTimestamp - a.latestTimestamp;
+      return a.folderName.localeCompare(b.folderName, "fr");
+    })
+    .forEach(({ folderName, folderFiles, sortedFiles }) => {
+      const card = document.createElement("article");
+      card.className = "folder-tile";
+
+      const accents = getFolderAccent(folderName);
+      card.style.setProperty("--folder-tile-color", accents.background);
+      card.style.setProperty("--folder-tile-accent", accents.accent);
+
+      const latestDate = sortedFiles.length ? formatDate(sortedFiles[0].modifiedTime) : "—";
+      const versionCount = folderFiles.length;
+      const versionLabel = `${versionCount} miniature${versionCount > 1 ? "s" : ""}`;
+      const previewFile = sortedFiles.find(file => file.thumbnailLink);
+      const previewMarkup = previewFile
+        ? `<img src="${getMiniatureThumbnail(previewFile.thumbnailLink)}" alt="${folderName}" loading="lazy" />`
+        : `<span>${(folderName[0] || "D").toUpperCase()}</span>`;
+      const subtitle = latestDate !== "—"
+        ? `Dernière màj ${latestDate}`
+        : "Historique en préparation";
+
+      card.innerHTML = `
+        <div class="folder-tile-cover">
+          <div class="folder-tile-avatar">${previewMarkup}</div>
+        </div>
+        <div class="folder-tile-body" role="button" tabindex="0" aria-expanded="false">
+          <div class="folder-tile-row">
+            <div class="folder-tile-text">
+              <h3 class="folder-tile-name">${folderName}</h3>
+              <p class="folder-tile-subtitle">${subtitle}</p>
+            </div>
+            <div class="folder-tile-meta">
+              <div class="folder-tile-stat">
+                <span class="icon-star" aria-hidden="true"></span>
+                <span>${versionLabel}</span>
+              </div>
+              <span class="folder-tile-caret" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+        <div class="folder-tile-panel" hidden></div>
+      `;
+
+      const panel = card.querySelector(".folder-tile-panel");
+      const subfolders = buildSubfolderGroups(sortedFiles, folderName);
+      const onlyRootSubfolder = subfolders.length === 1 && subfolders[0].key === ROOT_SUBFOLDER_KEY;
+      if (!subfolders.length || onlyRootSubfolder) {
+        const grid = document.createElement("div");
+        grid.className = "folder-mini-grid";
+        sortedFiles.forEach(file => grid.appendChild(createFolderMiniCard(file, folderName)));
+        panel.appendChild(grid);
+      } else {
+        const list = document.createElement("div");
+        list.className = "subfolder-list";
+        subfolders.forEach(subfolder => {
+          const subCard = document.createElement("article");
+          subCard.className = "subfolder-card";
+
+          const head = document.createElement("div");
+          head.className = "subfolder-head";
+          head.setAttribute("role", "button");
+          head.setAttribute("tabindex", "0");
+          head.setAttribute("aria-expanded", "false");
+          const subSubtitle = subfolder.files.length
+            ? `Dernière màj ${formatDate(subfolder.files[0].modifiedTime)}`
+            : "En attente de miniatures";
+          const countLabel = `${subfolder.count} miniature${subfolder.count > 1 ? "s" : ""}`;
+          head.innerHTML = `
+            <div class="subfolder-head-text">
+              <h4>${subfolder.displayLabel}</h4>
+              <p>${subSubtitle}</p>
+            </div>
+            <div class="subfolder-head-meta">
+              <span>${countLabel}</span>
+              <span class="subfolder-caret" aria-hidden="true"></span>
+            </div>
+          `;
+
+          const subPanel = document.createElement("div");
+          subPanel.className = "subfolder-panel";
+          subPanel.hidden = true;
+          const grid = document.createElement("div");
+          grid.className = "folder-mini-grid";
+          subfolder.files.forEach(file => grid.appendChild(createFolderMiniCard(file, subfolder.label)));
+          subPanel.appendChild(grid);
+
+          const toggleSubfolder = () => {
+            const expanded = head.getAttribute("aria-expanded") === "true";
+            if (!expanded) closeSiblingSubfolderCards(list, subCard);
+            head.setAttribute("aria-expanded", String(!expanded));
+            subCard.classList.toggle("open", !expanded);
+            subPanel.hidden = expanded;
+          };
+          head.addEventListener("click", toggleSubfolder);
+          head.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggleSubfolder();
+            }
+          });
+
+          subCard.append(head, subPanel);
+          list.appendChild(subCard);
+        });
+        panel.appendChild(list);
+      }
+
+      const trigger = card.querySelector(".folder-tile-body");
+      const setState = expand => {
+        if (expand) closeOtherFolderTiles(card, targetGrid);
+        trigger.setAttribute("aria-expanded", String(expand));
+        card.classList.toggle("open", expand);
+        panel.hidden = !expand;
+      };
+      setState(false);
+      const togglePanel = () => {
+        const isExpanded = trigger.getAttribute("aria-expanded") === "true";
+        setState(!isExpanded);
+      };
+      trigger.addEventListener("click", togglePanel);
+      trigger.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          togglePanel();
+        }
+      });
+
+      folderList.appendChild(card);
+    });
+
+  targetGrid.appendChild(folderList);
+}
+
+
+const adminMiniaturesView = document.getElementById("adminMiniaturesView");
+const adminMiniaturesSearchInput = document.getElementById("adminMiniaturesSearch");
+const adminMiniaturesClientList = document.getElementById("adminMiniaturesClientList");
+const adminMiniaturesCountEl = document.getElementById("adminMiniaturesCount");
+const adminMiniaturesGrid = document.getElementById("adminMiniaturesGrid");
+const adminMiniaturesStatus = document.getElementById("adminMiniaturesStatus");
+const adminMiniaturesTitle = document.getElementById("adminMiniaturesTitle");
+const adminMiniaturesSubtitle = document.getElementById("adminMiniaturesSubtitle");
+const adminMiniaturesDriveLink = document.getElementById("adminMiniaturesDriveLink");
+const adminMiniaturesRefreshBtn = document.getElementById("adminMiniaturesRefresh");
+
+let adminDriveDirectory = [];
+let adminDriveDirectoryLoaded = false;
+let adminDriveDirectoryLoading = false;
+const adminDriveCache = new Map();
+let adminDriveActiveSlug = null;
+
+function getAdminMiniaturesFilter() {
+  return adminMiniaturesSearchInput ? adminMiniaturesSearchInput.value || "" : "";
+}
+
+function buildDriveDirectoryEntry(entry) {
+  if (!entry || !entry.name) return null;
+  const label = formatDriveClientLabel(entry.name);
+  const slug = toSlug(label);
+  if (!slug) return null;
+  return {
+    id: entry.id || "",
+    label,
+    rawName: entry.name || label,
+    slug,
+    driveUrl: entry.id ? `https://drive.google.com/drive/folders/${entry.id}` : ""
+  };
+}
+
+function setAdminMiniaturesStatus(message, { loading = false } = {}) {
+  if (!adminMiniaturesStatus) return;
+  const text = message || "";
+  adminMiniaturesStatus.textContent = text;
+  adminMiniaturesStatus.classList.toggle("hidden", !text);
+  adminMiniaturesStatus.classList.toggle("loading", Boolean(text && loading));
+}
+
+function clearAdminMiniaturesSelection() {
+  if (adminMiniaturesTitle) adminMiniaturesTitle.textContent = "Aucun dossier sélectionné";
+  if (adminMiniaturesSubtitle) {
+    adminMiniaturesSubtitle.textContent = "Sélectionne un client à gauche pour accéder à ses miniatures.";
+  }
+  if (adminMiniaturesDriveLink) {
+    adminMiniaturesDriveLink.setAttribute("aria-disabled", "true");
+    adminMiniaturesDriveLink.removeAttribute("href");
+  }
+  if (adminMiniaturesGrid) {
+    adminMiniaturesGrid.classList.add("hidden");
+    adminMiniaturesGrid.innerHTML = "";
+  }
+  setAdminMiniaturesStatus("Sélectionne un dossier client pour afficher les miniatures.");
+}
+
+function renderAdminMiniaturesDirectory(filter = "") {
+  if (!adminMiniaturesClientList) return;
+  const term = filter.trim().toLowerCase();
+  const entries = adminDriveDirectory
+    .filter(entry => !term || entry.label.toLowerCase().includes(term) || entry.slug.includes(term))
+    .sort((a, b) => a.label.localeCompare(b.label, "fr"));
+
+  adminMiniaturesClientList.innerHTML = "";
+  if (adminMiniaturesCountEl) {
+    adminMiniaturesCountEl.textContent = entries.length
+      ? `${entries.length} dossier${entries.length > 1 ? "s" : ""}`
+      : "0 dossier";
+  }
+
+  if (!entries.length) {
+    const empty = document.createElement("p");
+    empty.className = "admin-miniatures-empty";
+    empty.textContent = adminDriveDirectoryLoaded
+      ? "Aucun dossier ne correspond à ta recherche."
+      : "Aucun dossier Drive détecté.";
+    adminMiniaturesClientList.appendChild(empty);
+    return;
+  }
+
+  entries.forEach(entry => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "admin-miniatures-client";
+    if (entry.slug === adminDriveActiveSlug) button.classList.add("active");
+    button.innerHTML = `<strong>${entry.label}</strong><span>${entry.slug}</span>`;
+    button.addEventListener("click", () => selectAdminDriveClient(entry.slug));
+    adminMiniaturesClientList.appendChild(button);
+  });
+}
+
+async function loadAdminDriveDirectory(force = false) {
+  if (!adminMiniaturesView) return;
+  if (adminDriveDirectoryLoading) return;
+  if (adminDriveDirectoryLoaded && !force) return;
+
+  adminDriveDirectoryLoading = true;
+  setAdminMiniaturesStatus("Chargement des dossiers Drive…", { loading: true });
+
+  try {
+    const response = await fetch("http://localhost:3000/api/client/list-root");
+    if (!response.ok) throw new Error("Impossible de récupérer les dossiers Drive.");
+    const payload = await response.json();
+    adminDriveDirectory = Array.isArray(payload)
+      ? payload
+          .map(buildDriveDirectoryEntry)
+          .filter(Boolean)
+          .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+      : [];
+    adminDriveDirectoryLoaded = true;
+    renderAdminMiniaturesDirectory(getAdminMiniaturesFilter());
+    if (!adminDriveDirectory.length) {
+      setAdminMiniaturesStatus("Aucun dossier Drive détecté.");
+    } else if (!adminDriveActiveSlug) {
+      setAdminMiniaturesStatus("Sélectionne un dossier client pour afficher les miniatures.");
+    }
+  } catch (error) {
+    console.error("Erreur lors du chargement des dossiers Drive", error);
+    setAdminMiniaturesStatus(
+      (error && error.message) || "Impossible de charger les dossiers Drive."
+    );
+  } finally {
+    adminDriveDirectoryLoading = false;
+  }
+}
+
+async function selectAdminDriveClient(slug, { force = false } = {}) {
+  if (!slug) return;
+  const entry = adminDriveDirectory.find(item => item.slug === slug);
+  if (!entry) {
+    setAdminMiniaturesStatus("Dossier client introuvable.");
+    return;
+  }
+  adminDriveActiveSlug = slug;
+  renderAdminMiniaturesDirectory(getAdminMiniaturesFilter());
+  if (adminMiniaturesTitle) adminMiniaturesTitle.textContent = entry.label;
+  if (adminMiniaturesDriveLink) {
+    if (entry.driveUrl) {
+      adminMiniaturesDriveLink.href = entry.driveUrl;
+      adminMiniaturesDriveLink.removeAttribute("aria-disabled");
+    } else {
+      adminMiniaturesDriveLink.setAttribute("aria-disabled", "true");
+      adminMiniaturesDriveLink.removeAttribute("href");
+    }
+  }
+
+  const cached = adminDriveCache.get(slug);
+  if (cached && !force) {
+    renderAdminDriveFiles(entry, cached);
+    return;
+  }
+
+  setAdminMiniaturesStatus("Chargement des miniatures…", { loading: true });
+  try {
+    const payload = await fetchDriveFilesForClient(slug);
+    adminDriveCache.set(slug, payload);
+    renderAdminDriveFiles(entry, payload);
+  } catch (error) {
+    console.error(`Impossible de charger les miniatures Drive pour ${slug}`, error);
+    setAdminMiniaturesStatus("Impossible de charger les miniatures de ce client.");
+    if (adminMiniaturesGrid) {
+      adminMiniaturesGrid.innerHTML = "";
+      adminMiniaturesGrid.classList.add("hidden");
+    }
+  }
+}
+
+function renderAdminDriveFiles(entry, payload) {
+  if (!adminMiniaturesGrid) return;
+  const files = Array.isArray(payload && payload.files) ? payload.files : [];
+  const folderName = (payload && payload.folderName) || entry.rawName || entry.label;
+  if (adminMiniaturesSubtitle) {
+    adminMiniaturesSubtitle.textContent = folderName || entry.label;
+  }
+  if (!files.length) {
+    adminMiniaturesGrid.innerHTML = "";
+    adminMiniaturesGrid.classList.remove("hidden");
+    renderFolderView([], {
+      container: adminMiniaturesGrid,
+      emptyLabel: "Ce dossier Drive ne contient aucune miniature."
+    });
+    setAdminMiniaturesStatus("Aucune miniature détectée pour ce dossier.");
+    return;
+  }
+  renderFolderView(files, {
+    container: adminMiniaturesGrid,
+    emptyLabel: "Ce dossier Drive ne contient aucune miniature."
+  });
+  adminMiniaturesGrid.classList.remove("hidden");
+  const countLabel = `${files.length} miniature${files.length > 1 ? "s" : ""} synchronisée${files.length > 1 ? "s" : ""}.`;
+  setAdminMiniaturesStatus(countLabel);
+}
+
+function ensureAdminMiniaturesDirectory(force = false) {
+  if (!adminMiniaturesView) return Promise.resolve();
+  return loadAdminDriveDirectory(force);
+}
+
+function refreshAdminMiniaturesDirectory() {
+  adminDriveCache.clear();
+  const loadPromise = ensureAdminMiniaturesDirectory(true);
+  if (!loadPromise || typeof loadPromise.then !== "function") {
+    clearAdminMiniaturesSelection();
+    return;
+  }
+  loadPromise
+    .then(() => {
+      if (adminDriveActiveSlug) {
+        return selectAdminDriveClient(adminDriveActiveSlug, { force: true });
+      }
+      clearAdminMiniaturesSelection();
+      return null;
+    })
+    .catch(error => {
+      console.error("Impossible d’actualiser les dossiers Drive", error);
+    });
+}
+
 const miniaturesExternalLink = document.getElementById("miniaturesExternalLink");
 const miniaturesFolderList = document.getElementById("miniaturesFolderList");
 const miniaturesEmptyState = document.getElementById("miniaturesEmptyState");
@@ -783,6 +1632,7 @@ const adminViews = {
   dashboard: document.getElementById("adminDashboardView"),
   insights: document.getElementById("adminInsightsView"),
   clients: adminPanel,
+  miniatures: document.getElementById("adminMiniaturesView"),
   extension: document.getElementById("adminExtensionView")
 };
 const totalThumbsEl = document.getElementById("totalThumbs");
@@ -896,6 +1746,7 @@ function configureChartsTheme() {
 }
 
 configureChartsTheme();
+configureExtensionCta();
 
 function setClientView(view) {
   if (!clientViewSections.length) return;
@@ -910,9 +1761,14 @@ function setClientView(view) {
   if (!matchFound) return;
   clientNavLinks.forEach(link => {
     if (!link) return;
-    link.classList.toggle("active", link.dataset.clientView === target);
+    const viewName = link.dataset.clientView;
+    link.classList.toggle("active", viewName === target);
   });
   activeClientView = target;
+  if (topbar) {
+    topbar.style.display = target === "extension-miniads" ? "none" : "";
+  }
+  document.body.classList.toggle("extension-active", target === "extension-miniads");
 }
 
 function resetClientView() {
@@ -924,9 +1780,8 @@ function configureClientNavigation() {
     clientNavLinks.forEach(link => {
       link.addEventListener("click", () => {
         const targetView = link.dataset.clientView;
-        if (targetView) {
-          setClientView(targetView);
-        }
+        if (!targetView) return;
+        setClientView(targetView);
       });
     });
   }
@@ -945,7 +1800,45 @@ function configureClientNavigation() {
   setClientView(activeClientView);
 }
 
+function configureExtensionCta() {
+  if (extensionInstallBtn) {
+    extensionInstallBtn.addEventListener("click", () => {
+      window.open(MINIADS_EXTENSION_INSTALL_URL, "_blank", "noopener,noreferrer");
+    });
+  }
+  if (extensionInstallBtnInline) {
+    extensionInstallBtnInline.addEventListener("click", () => {
+      window.open(MINIADS_EXTENSION_INSTALL_URL, "_blank", "noopener,noreferrer");
+    });
+  }
+  if (extensionDocBtn && extensionDocBtn.href === "#") {
+    extensionDocBtn.href = MINIADS_EXTENSION_INSTALL_URL;
+  }
+}
+
 function updateMiniaturesLibrary(config) {
+// --- MODE API ---
+// if (MINIADS_API_MODE) {
+//   if (!miniaturesContent || !miniaturesGrid) return;
+//   const url = new URL(window.location.href);
+//   const clientSlug = url.searchParams.get("client") || "";
+//   miniaturesContent.classList.remove("hidden");
+//   miniaturesEmptyState.classList.add("hidden");
+
+//   if (miniaturesEmbed) miniaturesEmbed.classList.add("miniatures-embed-unavailable");
+//   if (miniaturesDriveFrame) miniaturesDriveFrame.setAttribute("hidden","hidden");
+//   if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
+//   if (miniaturesExternalLink) miniaturesExternalLink.setAttribute("aria-disabled","true");
+
+//   renderFilesGrid([]);
+//   fetchDriveFilesForClient(clientSlug)
+//     .then(files => renderFilesGrid(files))
+//     .catch(() => {
+//       miniaturesGrid.innerHTML = `<div class="miniatures-empty">Impossible de charger vos miniatures pour le moment.</div>`;
+//     });
+
+//   return;
+// }
   if (!miniaturesEmptyState || !miniaturesContent) return;
   const folders = config && Array.isArray(config.driveFolders) ? config.driveFolders : [];
   activeDriveFolderIndex = 0;
@@ -1041,6 +1934,18 @@ function applyDriveFolderSelection(folder, index) {
 configureClientNavigation();
 updateMiniaturesLibrary(currentClientConfig);
 
+if (adminMiniaturesSearchInput) {
+  adminMiniaturesSearchInput.addEventListener("input", event => {
+    renderAdminMiniaturesDirectory(event.target.value);
+  });
+}
+
+if (adminMiniaturesRefreshBtn) {
+  adminMiniaturesRefreshBtn.addEventListener("click", () => {
+    refreshAdminMiniaturesDirectory();
+  });
+}
+
 const ADMIN_VIEW_COPY = {
   dashboard: {
     title: "Dashboard",
@@ -1053,6 +1958,10 @@ const ADMIN_VIEW_COPY = {
   clients: {
     title: "Mes clients",
     subtitle: "Sélectionne un créateur pour charger ses miniatures et copier son lien sécurisé."
+  },
+  miniatures: {
+    title: "Miniatures réalisées",
+    subtitle: "Explore toutes les miniatures livrées par dossier client."
   },
   extension: {
     title: "Extension YouTube",
@@ -1081,6 +1990,9 @@ function setAdminView(view) {
   }
   if (view === "clients") {
     ensureTableInHost(adminTableHost);
+  }
+  if (view === "miniatures") {
+    ensureAdminMiniaturesDirectory();
   }
 }
 
@@ -2670,6 +3582,14 @@ async function enterAdminMode(initialSlug) {
   if (adminTablePlaceholder) adminTablePlaceholder.classList.remove("hidden");
   if (adminTableHost) adminTableHost.classList.add("hidden");
   if (clientSearchInput) clientSearchInput.value = "";
+  adminDriveDirectory = [];
+  adminDriveDirectoryLoaded = false;
+  adminDriveDirectoryLoading = false;
+  adminDriveActiveSlug = null;
+  adminDriveCache.clear();
+  if (adminMiniaturesClientList) adminMiniaturesClientList.innerHTML = "";
+  if (adminMiniaturesCountEl) adminMiniaturesCountEl.textContent = "— dossiers";
+  clearAdminMiniaturesSelection();
   setAdminView(initialSlug ? "clients" : activeAdminView || "clients");
   await buildClientDirectory();
   const normalizedInitial = initialSlug ? toSlug(initialSlug) : null;
@@ -2824,4 +3744,4 @@ if (isAdminRoute) {
       summaryBody.innerHTML = `<tr><td colspan="5" class="empty">Configuration client introuvable.</td></tr>`;
     }
   }
-}
+} // ← fin de ton code existant

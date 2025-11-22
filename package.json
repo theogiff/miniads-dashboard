@@ -1,0 +1,29 @@
+{
+  "name": "dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "admin-auth.js",
+  "scripts": {
+    "dev": "node --env-file=server/.env server/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theogiff/miniads-dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "googleapis": "^165.0.0",
+    "node-cache": "^5.1.2"
+  },
+  "bugs": {
+    "url": "https://github.com/theogiff/miniads-dashboard/issues"
+  },
+  "homepage": "https://github.com/theogiff/miniads-dashboard#readme"
+}
