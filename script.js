@@ -810,7 +810,7 @@ const topbar = document.querySelector(".topbar");
 
 async function fetchDriveFilesForClient(slug) {
   const res = await fetch(
-    `http://localhost:3000/api/client/bySlug/${encodeURIComponent(slug)}`
+    `/api/client/bySlug/${encodeURIComponent(slug)}`
   );
 
   if (!res.ok) throw new Error("API Drive KO");
@@ -1480,7 +1480,7 @@ async function loadAdminDriveDirectory(force = false) {
   setAdminMiniaturesStatus("Chargement des dossiers Drive…", { loading: true });
 
   try {
-    const response = await fetch("http://localhost:3000/api/client/list-root");
+    const response = await fetch("/api/client/list-root");
     if (!response.ok) throw new Error("Impossible de récupérer les dossiers Drive.");
     const payload = await response.json();
     adminDriveDirectory = Array.isArray(payload)
