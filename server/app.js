@@ -92,7 +92,10 @@ const parseCookies = (req) => {
 
 const verifySession = (token) => {
   if (!token || !ADMIN_SESSION_SECRET) return null;
-  const [email, expStr, hmac] = token.split(".");
+  const parts = token.split(".");
+  const hmac = parts.pop();
+  const expStr = parts.pop();
+  const email = parts.join(".");
   if (!email || !expStr || !hmac) return null;
   const payload = `${email}.${expStr}`;
   const expected = crypto.createHmac("sha256", ADMIN_SESSION_SECRET).update(payload).digest("hex");
