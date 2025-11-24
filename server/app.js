@@ -96,10 +96,17 @@ const verifySession = (token) => {
   if (!email || !expStr || !hmac) return null;
   const payload = `${email}.${expStr}`;
   const expected = crypto.createHmac("sha256", ADMIN_SESSION_SECRET).update(payload).digest("hex");
-  const bufExpected = Buffer.from(expected);
-  const bufHmac = Buffer.from(hmac);
-  if (bufExpected.length !== bufHmac.length) return null;
-  if (!crypto.timingSafeEqual(bufExpected, bufHmac)) return null;
+  if (expected !== hmac) {
+    console.warn("Session HMAC mismatch", {
+      email,
+      expStr,
+      expectedHead: expected.slice(0, 8),
+      receivedHead: hmac.slice(0, 8),
+      expectedLen: expected.length,
+      receivedLen: hmac.length
+    });
+    return null;
+  }
   const exp = Number.parseInt(expStr, 10);
   if (!Number.isFinite(exp) || exp < Date.now()) return null;
   return email;
@@ -181,7 +188,8 @@ app.get("/api/admin/me", (req, res) => {
     const email = verifySession(token);
     if (!email) {
       console.warn("Session invalide (signature/expiration)", {
-        tokenLength: token.length
+        tokenLength: token.length,
+        tokenHead: token.slice(0, 24)
       });
       clearSessionCookie(res);
       res.setHeader("Cache-Control", "no-store");
