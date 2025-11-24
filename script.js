@@ -288,8 +288,8 @@ const CLIENTS = {
 };
 
 const ADMIN_DEFAULTS = {
-  email: "contact@miniads.fr",
-  password: "K5Z$zyLqF&yPKtV$0r0k",
+  email: "",
+  password: "",
   sessionKey: "miniads-admin-session"
 };
 
@@ -3629,6 +3629,15 @@ if (airtableViewInput && !airtableViewInput.value && DEFAULT_VIEW_ID) {
 }
 
 // --- Logique principale ---
+async function checkAdminSession() {
+  try {
+    const response = await fetch("/api/admin/me", { credentials: "include" });
+    return response.ok;
+  } catch (_e) {
+    return false;
+  }
+}
+
 async function loadAirtable({ apiKey, baseId, tableId, view, filterByFormula } = {}) {
   if (!apiKey || !baseId || !tableId) {
     alert("Renseigne une clé API, un ID de base et une table Airtable.");
@@ -3645,36 +3654,18 @@ async function loadAirtable({ apiKey, baseId, tableId, view, filterByFormula } =
   }
 }
 
-if (isAdminRoute) {
+async function initAdminFlow() {
   setClientContext("");
-  const hasSession = sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
-  if (hasSession) {
-    enterAdminMode(rawClientParam ? rawClientParam.toLowerCase() : null).catch(err => {
-      console.error("Erreur lors de l'initialisation admin", err);
-    });
-  } else {
-    showLoginUI();
-    if (adminLogin) {
-      adminLogin.classList.add("visible");
-    }
+  const hasSession = await checkAdminSession();
+  if (!hasSession) {
+    const redirectParam = encodeURIComponent(window.location.href);
+    window.location.replace(`/admin-login.html?redirect=${redirectParam}`);
+    return;
   }
 
-  if (adminLoginForm) {
-    adminLoginForm.addEventListener("submit", event => {
-      event.preventDefault();
-      const email = (adminEmailInput ? adminEmailInput.value : "test@test.fr").trim().toLowerCase();
-      const password = adminPasswordInput ? adminPasswordInput.value : "admin";
-      const valid = email === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD;
-      if (valid) {
-        if (adminLoginError) adminLoginError.textContent = "";
-        enterAdminMode(rawClientParam ? rawClientParam.toLowerCase() : null).catch(err => {
-          console.error("Erreur lors de la connexion admin", err);
-        });
-      } else if (adminLoginError) {
-        adminLoginError.textContent = "Identifiants incorrects.";
-      }
-    });
-  }
+  enterAdminMode(rawClientParam ? rawClientParam.toLowerCase() : null).catch(err => {
+    console.error("Erreur lors de l'initialisation admin", err);
+  });
 
   if (adminNavLinks.length) {
     adminNavLinks.forEach(link => {
@@ -3725,6 +3716,10 @@ if (isAdminRoute) {
   }
 
   updateFilterButtonsUI();
+}
+
+if (isAdminRoute) {
+  initAdminFlow();
 } else if (clientParam) {
   const clientConfig = applyClientConfig(clientParam);
   if (clientConfig && clientConfig.apiKey && clientConfig.baseId && clientConfig.tableId) {

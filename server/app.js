@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
+import crypto from "node:crypto";
 import { google } from "googleapis";
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 const DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder";
 
@@ -59,6 +61,121 @@ const extractClientNameFromFolder = (folderName = "") => {
   // "Miniatures - Yomi Denzel" -> "Yomi Denzel"
   return folderName.replace(/^miniatures\s*-\s*/i, "").trim();
 };
+
+// --- Admin session helpers ---
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET;
+const ADMIN_SESSION_COOKIE = "admin_session";
+const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+
+const signSession = (email) => {
+  const exp = Date.now() + ADMIN_SESSION_TTL_MS;
+  const payload = `${email}.${exp}`;
+  const hmac = crypto
+    .createHmac("sha256", ADMIN_SESSION_SECRET || "")
+    .update(payload)
+    .digest("hex");
+  return `${payload}.${hmac}`;
+};
+
+const parseCookies = (req) => {
+  const header = req.headers.cookie || "";
+  return header.split(";").reduce((acc, part) => {
+    const [k, v] = part.trim().split("=");
+    if (k && v) acc[k] = decodeURIComponent(v);
+    return acc;
+  }, {});
+};
+
+const verifySession = (token) => {
+  if (!token || !ADMIN_SESSION_SECRET) return null;
+  const [email, expStr, hmac] = token.split(".");
+  if (!email || !expStr || !hmac) return null;
+  const payload = `${email}.${expStr}`;
+  const expected = crypto.createHmac("sha256", ADMIN_SESSION_SECRET).update(payload).digest("hex");
+  const bufExpected = Buffer.from(expected);
+  const bufHmac = Buffer.from(hmac);
+  if (bufExpected.length !== bufHmac.length) return null;
+  if (!crypto.timingSafeEqual(bufExpected, bufHmac)) return null;
+  const exp = Number.parseInt(expStr, 10);
+  if (!Number.isFinite(exp) || exp < Date.now()) return null;
+  return email;
+};
+
+const setSessionCookie = (res, token) => {
+  const maxAge = Math.floor(ADMIN_SESSION_TTL_MS / 1000);
+  const cookie = [
+    `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(token)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${maxAge}`,
+    isProduction ? "Secure" : null
+  ]
+    .filter(Boolean)
+    .join("; ");
+  res.setHeader("Set-Cookie", cookie);
+};
+
+const clearSessionCookie = (res) => {
+  const cookie = [
+    `${ADMIN_SESSION_COOKIE}=deleted`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0",
+    isProduction ? "Secure" : null
+  ]
+    .filter(Boolean)
+    .join("; ");
+  res.setHeader("Set-Cookie", cookie);
+};
+
+// --- Admin endpoints ---
+app.post("/api/admin/login", (req, res) => {
+  try {
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !ADMIN_SESSION_SECRET) {
+      return res.status(500).json({ error: "Configuration admin manquante" });
+    }
+    const { email = "", password = "" } = req.body || {};
+    const normalized = String(email).trim().toLowerCase();
+    if (
+      normalized !== ADMIN_EMAIL.trim().toLowerCase() ||
+      String(password) !== ADMIN_PASSWORD
+    ) {
+      return res.status(401).json({ error: "Identifiants incorrects" });
+    }
+    const token = signSession(ADMIN_EMAIL.trim().toLowerCase());
+    setSessionCookie(res, token);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("Erreur /api/admin/login:", e.message);
+    res.status(500).json({ error: "Erreur login admin" });
+  }
+});
+
+app.get("/api/admin/me", (req, res) => {
+  try {
+    const cookies = parseCookies(req);
+    const token = cookies[ADMIN_SESSION_COOKIE];
+    const email = verifySession(token);
+    if (!email) {
+      return res.status(401).json({ error: "Session invalide" });
+    }
+    res.json({ email });
+  } catch (e) {
+    console.error("Erreur /api/admin/me:", e.message);
+    res.status(500).json({ error: "Erreur session admin" });
+  }
+});
+
+app.post("/api/admin/logout", (_req, res) => {
+  clearSessionCookie(res);
+  res.json({ ok: true });
+});
 
 // --- Endpoint debug: voir les dossiers racine des clients ---
 app.get("/api/client/list-root", async (req, res) => {

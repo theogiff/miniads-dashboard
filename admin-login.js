@@ -5,10 +5,6 @@
   const emailInput = document.getElementById("adminEmail");
   const passwordInput = document.getElementById("adminPassword");
   const errorEl = document.getElementById("adminLoginError");
-  const auth = window.MINIADS_ADMIN_AUTH || {};
-  const expectedEmail = (auth.email || "").trim().toLowerCase();
-  const expectedPassword = auth.password || "";
-  const sessionKey = auth.sessionKey || "miniads-admin-session";
   const params = new URLSearchParams(window.location.search);
   const defaultRedirect = "./index.html?mode=admin";
   const rawRedirect = params.get("redirect") || params.get("next");
@@ -20,10 +16,11 @@
     window.location.href = redirectTarget;
   };
 
-  if (sessionStorage.getItem(sessionKey) === "1") {
-    redirectToDashboard();
-    return;
-  }
+  fetch("/api/admin/me", { credentials: "include" })
+    .then(response => {
+      if (response.ok) redirectToDashboard();
+    })
+    .catch(() => {});
 
   form.addEventListener("submit", event => {
     event.preventDefault();
@@ -31,20 +28,30 @@
     const enteredEmail = emailInput ? emailInput.value.trim().toLowerCase() : "";
     const enteredPassword = passwordInput ? passwordInput.value : "";
 
-    const isValid = enteredEmail === expectedEmail && enteredPassword === expectedPassword;
-
-    if (isValid) {
-      sessionStorage.setItem(sessionKey, "1");
-      if (errorEl) errorEl.textContent = "";
-      redirectToDashboard();
-    } else {
-      if (errorEl) {
-        errorEl.textContent = "Identifiants incorrects. Veuillez réessayer.";
-      }
-      if (passwordInput) {
-        passwordInput.value = "";
-        passwordInput.focus();
-      }
-    }
+    fetch("/api/admin/login", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email: enteredEmail, password: enteredPassword })
+    })
+      .then(async response => {
+        if (response.ok) {
+          if (errorEl) errorEl.textContent = "";
+          redirectToDashboard();
+          return;
+        }
+        const payload = await response.json().catch(() => null);
+        const message = (payload && payload.error) || "Identifiants incorrects. Veuillez réessayer.";
+        if (errorEl) errorEl.textContent = message;
+        if (passwordInput) {
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      })
+      .catch(() => {
+        if (errorEl) errorEl.textContent = "Impossible de se connecter. Réessaie dans un instant.";
+      });
   });
 })();
