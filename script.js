@@ -2625,8 +2625,8 @@ async function fetchAirtableRows({ apiKey, baseId, tableId, view, filterByFormul
 
 const rawModeParam = getParam("mode");
 const rawClientParam = getParam("client");
-const isAdminRoute = rawModeParam === "admin" || !rawClientParam;
-const clientParam = isAdminRoute ? null : rawClientParam;
+const isAdminRoute = rawModeParam === "admin";
+const clientParam = rawClientParam;
 const csvParam = null;
 
 function isLikelyNumericColumn(rows, field) {
@@ -3744,4 +3744,21 @@ if (isAdminRoute) {
       summaryBody.innerHTML = `<tr><td colspan="5" class="empty">Configuration client introuvable.</td></tr>`;
     }
   }
-} // ← fin de ton code existant
+} else {
+  document.body.classList.remove("admin-mode");
+  document.body.classList.add("client-mode");
+  if (adminLayout) adminLayout.classList.add("admin-hidden");
+  if (clientContainer) clientContainer.classList.add("hidden");
+  const existingNotice = document.querySelector(".missing-client-notice");
+  if (!existingNotice) {
+    const notice = document.createElement("div");
+    notice.className = "missing-client-notice";
+    notice.innerHTML = `
+      <div class="missing-client-card">
+        <h2>Accès client requis</h2>
+        <p>Utilise le lien personnalisé contenant <code>?client=mon-client</code> pour consulter l’espace.</p>
+      </div>
+    `;
+    document.body.appendChild(notice);
+  }
+}
