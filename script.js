@@ -3648,15 +3648,16 @@ async function loadAirtable({ apiKey, baseId, tableId, view, filterByFormula } =
 if (isAdminRoute) {
   setClientContext("");
   const hasSession = sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
-  if (!hasSession) {
-    const redirectParam = encodeURIComponent(window.location.href);
-    window.location.replace(`/admin-login.html?redirect=${redirectParam}`);
-    return;
+  if (hasSession) {
+    enterAdminMode(rawClientParam ? rawClientParam.toLowerCase() : null).catch(err => {
+      console.error("Erreur lors de l'initialisation admin", err);
+    });
+  } else {
+    showLoginUI();
+    if (adminLogin) {
+      adminLogin.classList.add("visible");
+    }
   }
-
-  enterAdminMode(rawClientParam ? rawClientParam.toLowerCase() : null).catch(err => {
-    console.error("Erreur lors de l'initialisation admin", err);
-  });
 
   if (adminLoginForm) {
     adminLoginForm.addEventListener("submit", event => {
