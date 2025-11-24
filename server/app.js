@@ -138,6 +138,11 @@ const clearSessionCookie = (res) => {
 app.post("/api/admin/login", (req, res) => {
   try {
     if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !ADMIN_SESSION_SECRET) {
+      console.error("Admin config manquante", {
+        hasEmail: !!ADMIN_EMAIL,
+        hasPassword: !!ADMIN_PASSWORD,
+        hasSecret: !!ADMIN_SESSION_SECRET,
+      });
       return res.status(500).json({ error: "Configuration admin manquante" });
     }
     const { email = "", password = "" } = req.body || {};
@@ -159,10 +164,22 @@ app.post("/api/admin/login", (req, res) => {
 
 app.get("/api/admin/me", (req, res) => {
   try {
+    if (!ADMIN_SESSION_SECRET || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      console.error("Admin config manquante sur /me", {
+        hasEmail: !!ADMIN_EMAIL,
+        hasPassword: !!ADMIN_PASSWORD,
+        hasSecret: !!ADMIN_SESSION_SECRET,
+      });
+      return res.status(500).json({ error: "Configuration admin manquante" });
+    }
     const cookies = parseCookies(req);
     const token = cookies[ADMIN_SESSION_COOKIE];
+    if (!token) {
+      return res.status(401).json({ error: "Session manquante" });
+    }
     const email = verifySession(token);
     if (!email) {
+      console.warn("Session invalide (signature/expiration)");
       return res.status(401).json({ error: "Session invalide" });
     }
     res.json({ email });
