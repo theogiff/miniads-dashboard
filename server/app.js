@@ -155,6 +155,7 @@ app.post("/api/admin/login", (req, res) => {
     }
     const token = signSession(ADMIN_EMAIL.trim().toLowerCase());
     setSessionCookie(res, token);
+    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true });
   } catch (e) {
     console.error("Erreur /api/admin/login:", e.message);
@@ -179,9 +180,14 @@ app.get("/api/admin/me", (req, res) => {
     }
     const email = verifySession(token);
     if (!email) {
-      console.warn("Session invalide (signature/expiration)");
+      console.warn("Session invalide (signature/expiration)", {
+        tokenLength: token.length
+      });
+      clearSessionCookie(res);
+      res.setHeader("Cache-Control", "no-store");
       return res.status(401).json({ error: "Session invalide" });
     }
+    res.setHeader("Cache-Control", "no-store");
     res.json({ email });
   } catch (e) {
     console.error("Erreur /api/admin/me:", e.message);
