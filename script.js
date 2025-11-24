@@ -288,8 +288,8 @@ const CLIENTS = {
 };
 
 const ADMIN_DEFAULTS = {
-  email: "test@test.fr",
-  password: "admin",
+  email: "contact@miniads.fr",
+  password: "K5Z$zyLqF&yPKtV$0r0k",
   sessionKey: "miniads-admin-session"
 };
 

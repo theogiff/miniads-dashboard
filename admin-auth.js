@@ -1,7 +1,7 @@
 (function initMiniadsAdminAuth(global) {
   const defaults = {
-    email: "test@test.fr",
-    password: "admin",
+    email: "contact@miniads.fr",
+    password: "K5Z$zyLqF&yPKtV$0r0k",
     sessionKey: "miniads-admin-session"
   };
 
