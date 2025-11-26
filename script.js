@@ -3670,8 +3670,8 @@ async function checkAdminSession() {
 }
 
 async function loadAirtable({ apiKey, baseId, tableId, view, filterByFormula } = {}) {
-  if (!apiKey || !baseId || !tableId) {
-    alert("Renseigne une clé API, un ID de base et une table Airtable.");
+  if (!baseId || !tableId) {
+    alert("Renseigne une base et une table Airtable.");
     return;
   }
 
