@@ -259,8 +259,6 @@ function formatDriveClientLabel(value = "") {
 }
 
 // --- Configuration multi-clients ---
-// Renseigne ici ton token d'accès Airtable (lecture seule) commun à tous les clients.
-const DEFAULT_API_KEY = "";
 // Paramètres par défaut si tous les clients partagent la même base / table / vue.
 const DEFAULT_BASE_ID = "app4xekxY53MuEQvK";
 const DEFAULT_TABLE_ID = "tblnA0z8ooGAZYXIp";
@@ -3368,9 +3366,9 @@ async function initializeAgencyDashboard(force = false) {
     updateAdminDashboard();
     return;
   }
-  if (!DEFAULT_API_KEY || !DEFAULT_BASE_ID || !DEFAULT_TABLE_ID) {
+  if (!DEFAULT_BASE_ID || !DEFAULT_TABLE_ID) {
     if (adminTopSubtitle) {
-      adminTopSubtitle.textContent = "Renseigne ton API Airtable pour activer les indicateurs.";
+      adminTopSubtitle.textContent = "Renseigne la base Airtable pour activer les indicateurs.";
     }
     return;
   }
@@ -3381,7 +3379,6 @@ async function initializeAgencyDashboard(force = false) {
       adminTopSubtitle.textContent = "Chargement des indicateurs…";
     }
     const rows = await fetchAirtableRows({
-      apiKey: DEFAULT_API_KEY,
       baseId: DEFAULT_BASE_ID,
       tableId: DEFAULT_TABLE_ID,
       view: DEFAULT_VIEW_ID || undefined
@@ -3555,46 +3552,41 @@ async function buildClientDirectory() {
     });
   });
 
-  if (DEFAULT_API_KEY && DEFAULT_BASE_ID && DEFAULT_TABLE_ID && DEFAULT_PSEUDO_FIELD) {
+  if (DEFAULT_BASE_ID && DEFAULT_TABLE_ID && DEFAULT_PSEUDO_FIELD) {
     try {
-      const baseUrl = `https://api.airtable.com/v0/${encodeURIComponent(DEFAULT_BASE_ID)}/${encodeURIComponent(DEFAULT_TABLE_ID)}`;
-      let offset;
-      do {
-        const params = new URLSearchParams();
-        params.set("pageSize", "100");
-        params.append("fields[]", DEFAULT_PSEUDO_FIELD);
-        if (DEFAULT_VIEW_ID) params.set("view", DEFAULT_VIEW_ID);
-        if (offset) params.set("offset", offset);
-
-        const response = await fetch(`${baseUrl}?${params.toString()}`, {
-          headers: {
-            Authorization: `Bearer ${DEFAULT_API_KEY}`,
-            "Content-Type": "application/json"
-          },
-          cache: "no-store"
+      const response = await fetch("/api/airtable/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          baseId: DEFAULT_BASE_ID,
+          tableId: DEFAULT_TABLE_ID,
+          view: DEFAULT_VIEW_ID || undefined,
+          fields: [DEFAULT_PSEUDO_FIELD],
+          pageSize: 100
+        })
+      });
+      const text = await response.text();
+      const payload = text ? JSON.parse(text) : {};
+      if (!response.ok) throw new Error((payload && payload.error) || `Airtable ${response.status}`);
+      (payload.records || []).forEach(record => {
+        const field = record.fields ? record.fields[DEFAULT_PSEUDO_FIELD] : null;
+        let label = "";
+        if (Array.isArray(field)) {
+          label = field.find(v => typeof v === "string" && v.trim()) || "";
+        } else if (typeof field === "string") {
+          label = field;
+        }
+        label = (label || "").trim();
+        if (!label) return;
+        const normalized = toSlug(label);
+        if (!normalized || map.has(normalized)) return;
+        map.set(normalized, {
+          slug: normalized,
+          label,
+          accessKey: generateAccessKey(normalized)
         });
-        if (!response.ok) throw new Error(`Airtable ${response.status}`);
-        const payload = await response.json();
-        (payload.records || []).forEach(record => {
-          const field = record.fields ? record.fields[DEFAULT_PSEUDO_FIELD] : null;
-          let label = "";
-          if (Array.isArray(field)) {
-            label = field.find(v => typeof v === "string" && v.trim()) || "";
-          } else if (typeof field === "string") {
-            label = field;
-          }
-          label = (label || "").trim();
-          if (!label) return;
-          const normalized = toSlug(label);
-          if (!normalized || map.has(normalized)) return;
-          map.set(normalized, {
-            slug: normalized,
-            label,
-            accessKey: generateAccessKey(normalized)
-          });
-        });
-        offset = payload.offset;
-      } while (offset);
+      });
     } catch (err) {
       console.warn("Impossible de récupérer la liste des clients Airtable :", err);
     }
