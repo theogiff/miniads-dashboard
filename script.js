@@ -1863,28 +1863,37 @@ function configureExtensionCta() {
 }
 
 function updateMiniaturesLibrary(config) {
-// --- MODE API ---
-// if (MINIADS_API_MODE) {
-//   if (!miniaturesContent || !miniaturesGrid) return;
-//   const url = new URL(window.location.href);
-//   const clientSlug = url.searchParams.get("client") || "";
-//   miniaturesContent.classList.remove("hidden");
-//   miniaturesEmptyState.classList.add("hidden");
+  // --- MODE API client ---
+  if (MINIADS_API_MODE && !isAdminRoute) {
+    if (!miniaturesContent || !miniaturesGrid) return;
+    const url = new URL(window.location.href);
+    const clientSlug = url.searchParams.get("client") || "";
+    const accessKey = url.searchParams.get("key") || (config && config.accessKey);
+    if (!clientSlug || !accessKey) {
+      miniaturesContent.classList.add("hidden");
+      miniaturesEmptyState.classList.remove("hidden");
+      return;
+    }
+    miniaturesContent.classList.remove("hidden");
+    miniaturesEmptyState.classList.add("hidden");
 
-//   if (miniaturesEmbed) miniaturesEmbed.classList.add("miniatures-embed-unavailable");
-//   if (miniaturesDriveFrame) miniaturesDriveFrame.setAttribute("hidden","hidden");
-//   if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
-//   if (miniaturesExternalLink) miniaturesExternalLink.setAttribute("aria-disabled","true");
+    if (miniaturesEmbed) miniaturesEmbed.classList.add("miniatures-embed-unavailable");
+    if (miniaturesDriveFrame) miniaturesDriveFrame.setAttribute("hidden","hidden");
+    if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
+    if (miniaturesExternalLink) miniaturesExternalLink.setAttribute("aria-disabled","true");
 
-//   renderFilesGrid([]);
-//   fetchDriveFilesForClient(clientSlug)
-//     .then(files => renderFilesGrid(files))
-//     .catch(() => {
-//       miniaturesGrid.innerHTML = `<div class="miniatures-empty">Impossible de charger vos miniatures pour le moment.</div>`;
-//     });
+    renderFilesGrid([]);
+    fetchDriveFilesForClient(clientSlug, accessKey)
+      .then(data => {
+        currentFiles = data.files || [];
+        setMiniaturesView("folders");
+      })
+      .catch(() => {
+        miniaturesGrid.innerHTML = `<div class="miniatures-empty">Impossible de charger vos miniatures pour le moment.</div>`;
+      });
 
-//   return;
-// }
+    return;
+  }
   if (!miniaturesEmptyState || !miniaturesContent) return;
   const folders = config && Array.isArray(config.driveFolders) ? config.driveFolders : [];
   activeDriveFolderIndex = 0;
