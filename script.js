@@ -335,16 +335,62 @@ function toSlug(value = "") {
     || value.toLowerCase();
 }
 
+function seedFromString(str = "") {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return h >>> 0;
+  };
+}
+
+function seededUuid(seedString = "") {
+  const seedGenerator = seedFromString(seedString);
+  let a = seedGenerator();
+  let b = seedGenerator();
+  let c = seedGenerator();
+  let d = seedGenerator();
+
+  const next = () => {
+    a >>>= 0;
+    b >>>= 0;
+    c >>>= 0;
+    d >>>= 0;
+    let t = (a + b) | 0;
+    a = b ^ (b >>> 9);
+    b = (c + (c << 3)) | 0;
+    c = (c << 21) | (c >>> 11);
+    d = (d + 1) | 0;
+    t = (t + d) | 0;
+    c = (c + t) | 0;
+    return (t >>> 0) / 4294967296;
+  };
+
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Math.floor(next() * 256);
+  }
+
+  // RFC 4122 variant + version 4 bits to keep a standard UUID layout.
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+    .slice(6, 8)
+    .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
 function generateAccessKey(value = "") {
   const slug = toSlug(value);
   const salt = `${DEFAULT_BASE_ID || ""}|${DEFAULT_TABLE_ID || ""}`;
   const seed = `${slug}|${salt}`;
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
-  }
-  hash = Math.abs(hash);
-  return `mk-${hash.toString(36)}`;
+  return seededUuid(seed);
 }
 
 function applyClientConfig(slug, options = {}) {
