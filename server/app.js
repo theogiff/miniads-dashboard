@@ -320,6 +320,12 @@ app.get("/api/client/list-root", async (req, res) => {
 app.get("/api/client/bySlug/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
+    const providedKey = req.query.key;
+
+    // Clé d'accès obligatoire pour les clients (hors admin)
+    if (!providedKey && !isAdminRequest(req)) {
+      return res.status(401).json({ error: "Clé d'accès requise" });
+    }
 
     if (!process.env.CLIENT_MAIN_FOLDER) {
       return res
