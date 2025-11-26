@@ -259,6 +259,8 @@ function formatDriveClientLabel(value = "") {
 }
 
 // --- Configuration multi-clients ---
+// Clé Airtable côté serveur (laisse vide ici, lue via variable d'environnement).
+const DEFAULT_API_KEY = "";
 // Paramètres par défaut si tous les clients partagent la même base / table / vue.
 const DEFAULT_BASE_ID = "app4xekxY53MuEQvK";
 const DEFAULT_TABLE_ID = "tblnA0z8ooGAZYXIp";
