@@ -416,9 +416,7 @@ function applyClientConfig(slug, options = {}) {
 
   if (!options.bypassAccessKey) {
     const providedKey = getParam("key");
-    if (computedAccessKey && providedKey !== computedAccessKey) {
-      return null;
-    }
+    if (computedAccessKey && providedKey && providedKey !== computedAccessKey) return null;
   }
 
   if (airtableKeyInput && apiKey) airtableKeyInput.value = apiKey;
