@@ -854,12 +854,9 @@ const extensionDocBtn = document.getElementById("extensionDocBtn");
 const extensionInstallBtnInline = document.getElementById("extensionInstallBtnInline");
 const topbar = document.querySelector(".topbar");
 
-async function fetchDriveFilesForClient(slug, accessKey) {
-  const params = new URLSearchParams();
-  if (accessKey) params.set("key", accessKey);
-  const query = params.toString();
+async function fetchDriveFilesForClient(slug) {
   const res = await fetch(
-    `/api/client/bySlug/${encodeURIComponent(slug)}${query ? `?${query}` : ""}`
+    `/api/client/bySlug/${encodeURIComponent(slug)}`
   );
 
   if (!res.ok) throw new Error("API Drive KO");
@@ -872,8 +869,7 @@ let currentFiles = [];
 
 async function displayClientMiniatures(slug) {
   try {
-    const accessKey = getParam("key");
-    const data = await fetchDriveFilesForClient(slug, accessKey);
+    const data = await fetchDriveFilesForClient(slug);
 
     currentFiles = data.files || [];
 
@@ -1867,36 +1863,28 @@ function configureExtensionCta() {
 }
 
 function updateMiniaturesLibrary(config) {
-  if (MINIADS_API_MODE) {
-    if (!miniaturesContent || !miniaturesGrid) return;
-    const url = new URL(window.location.href);
-    const clientSlug = url.searchParams.get("client") || "";
-    const accessKey = url.searchParams.get("key") || (config && config.accessKey);
-    if (!clientSlug || !accessKey) {
-      miniaturesContent.classList.add("hidden");
-      miniaturesEmptyState.classList.remove("hidden");
-      return;
-    }
-    miniaturesContent.classList.remove("hidden");
-    miniaturesEmptyState.classList.add("hidden");
+// --- MODE API ---
+// if (MINIADS_API_MODE) {
+//   if (!miniaturesContent || !miniaturesGrid) return;
+//   const url = new URL(window.location.href);
+//   const clientSlug = url.searchParams.get("client") || "";
+//   miniaturesContent.classList.remove("hidden");
+//   miniaturesEmptyState.classList.add("hidden");
 
-    if (miniaturesEmbed) miniaturesEmbed.classList.add("miniatures-embed-unavailable");
-    if (miniaturesDriveFrame) miniaturesDriveFrame.setAttribute("hidden","hidden");
-    if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
-    if (miniaturesExternalLink) miniaturesExternalLink.setAttribute("aria-disabled","true");
+//   if (miniaturesEmbed) miniaturesEmbed.classList.add("miniatures-embed-unavailable");
+//   if (miniaturesDriveFrame) miniaturesDriveFrame.setAttribute("hidden","hidden");
+//   if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
+//   if (miniaturesExternalLink) miniaturesExternalLink.setAttribute("aria-disabled","true");
 
-    renderFilesGrid([]);
-    fetchDriveFilesForClient(clientSlug, accessKey)
-      .then(data => {
-        currentFiles = data.files || [];
-        setMiniaturesView("folders");
-      })
-      .catch(() => {
-        miniaturesGrid.innerHTML = `<div class="miniatures-empty">Impossible de charger vos miniatures pour le moment.</div>`;
-      });
+//   renderFilesGrid([]);
+//   fetchDriveFilesForClient(clientSlug)
+//     .then(files => renderFilesGrid(files))
+//     .catch(() => {
+//       miniaturesGrid.innerHTML = `<div class="miniatures-empty">Impossible de charger vos miniatures pour le moment.</div>`;
+//     });
 
-    return;
-  }
+//   return;
+// }
   if (!miniaturesEmptyState || !miniaturesContent) return;
   const folders = config && Array.isArray(config.driveFolders) ? config.driveFolders : [];
   activeDriveFolderIndex = 0;
