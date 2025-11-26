@@ -3751,7 +3751,7 @@ if (isAdminRoute) {
   initAdminFlow();
 } else if (clientParam) {
   const clientConfig = applyClientConfig(clientParam);
-  if (clientConfig && clientConfig.apiKey && clientConfig.baseId && clientConfig.tableId) {
+  if (clientConfig && clientConfig.baseId && clientConfig.tableId) {
     document.body.classList.remove("admin-mode");
     document.body.classList.add("client-mode");
     if (adminLayout) adminLayout.classList.add("admin-hidden");
