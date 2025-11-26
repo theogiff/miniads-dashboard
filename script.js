@@ -3797,7 +3797,7 @@ if (isAdminRoute) {
     notice.innerHTML = `
       <div class="missing-client-card">
         <h2>Accès client requis</h2>
-        <p>Utilise le lien personnalisé contenant <code>?client=mon-client</code> pour consulter l’espace.</p>
+        <p>Utilise le lien personnalisé reçu par email ou WhatsApp pour accéder à ton espace.</p>
       </div>
     `;
     document.body.appendChild(notice);
