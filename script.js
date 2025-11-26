@@ -403,12 +403,12 @@ function applyClientConfig(slug, options = {}) {
     return null;
   }
 
-  const apiKey = (configEntry && configEntry.apiKey) || DEFAULT_API_KEY;
+  const apiKey = (configEntry && configEntry.apiKey) || DEFAULT_API_KEY || null;
   const baseId = (configEntry && configEntry.baseId) || DEFAULT_BASE_ID;
   const tableId = (configEntry && configEntry.tableId) || DEFAULT_TABLE_ID;
   const view = configEntry && configEntry.view !== undefined ? configEntry.view : DEFAULT_VIEW_ID;
 
-  if (!apiKey || !baseId || !tableId) return null;
+  if (!baseId || !tableId) return null;
 
   const computedAccessKey = options.accessKeyOverride
     || (configEntry && configEntry.accessKey)
@@ -421,7 +421,7 @@ function applyClientConfig(slug, options = {}) {
     }
   }
 
-  if (airtableKeyInput) airtableKeyInput.value = apiKey;
+  if (airtableKeyInput && apiKey) airtableKeyInput.value = apiKey;
   if (airtableBaseInput) airtableBaseInput.value = baseId;
   if (airtableTableInput) airtableTableInput.value = tableId;
   if (airtableViewInput) airtableViewInput.value = view || "";
