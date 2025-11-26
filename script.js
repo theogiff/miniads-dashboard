@@ -410,13 +410,15 @@ function applyClientConfig(slug, options = {}) {
 
   if (!baseId || !tableId) return null;
 
-  const computedAccessKey = options.accessKeyOverride
-    || (configEntry && (configEntry.accessKey || generateAccessKey(normalizedSlug)))
-    || null;
+  const computedAccessKey = options.accessKeyOverride !== undefined
+    ? options.accessKeyOverride
+    : configEntry && configEntry.accessKey
+      ? configEntry.accessKey
+      : generateAccessKey(normalizedSlug);
 
   if (!options.bypassAccessKey) {
     const providedKey = getParam("key");
-    if (computedAccessKey && providedKey && providedKey !== computedAccessKey) return null;
+    if (!computedAccessKey || !providedKey || providedKey !== computedAccessKey) return null;
   }
 
   if (airtableKeyInput && apiKey) airtableKeyInput.value = apiKey;

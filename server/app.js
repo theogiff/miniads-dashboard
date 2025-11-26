@@ -212,6 +212,20 @@ app.post("/api/admin/logout", (_req, res) => {
   res.json({ ok: true });
 });
 
+// --- Helpers ---
+const isAdminRequest = (req) => {
+  try {
+    if (!ADMIN_SESSION_SECRET || !ADMIN_EMAIL || !ADMIN_PASSWORD) return false;
+    const cookies = parseCookies(req);
+    const token = cookies[ADMIN_SESSION_COOKIE];
+    if (!token) return false;
+    const email = verifySession(token);
+    return !!email;
+  } catch (_e) {
+    return false;
+  }
+};
+
 // --- Airtable proxy ---
 app.post("/api/airtable/query", async (req, res) => {
   try {
@@ -275,6 +289,10 @@ app.post("/api/airtable/query", async (req, res) => {
 // --- Endpoint debug: voir les dossiers racine des clients ---
 app.get("/api/client/list-root", async (req, res) => {
   try {
+    if (!isAdminRequest(req)) {
+      return res.status(401).json({ error: "Non autorisé" });
+    }
+
     if (!process.env.CLIENT_MAIN_FOLDER) {
       return res
         .status(500)
