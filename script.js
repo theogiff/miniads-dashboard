@@ -3765,9 +3765,22 @@ if (isAdminRoute) {
     loadAirtable(clientConfig);
   } else {
     console.warn(`Aucun client configuré ou clé invalide pour le slug « ${clientParam} ».`);
+    document.body.classList.remove("admin-mode");
+    document.body.classList.add("client-mode");
+    if (adminLayout) adminLayout.classList.add("admin-hidden");
+    if (clientContainer) clientContainer.classList.add("hidden");
     updateMiniaturesLibrary(null);
-    if (summaryBody) {
-      summaryBody.innerHTML = `<tr><td colspan="5" class="empty">Configuration client introuvable.</td></tr>`;
+    const existingNotice = document.querySelector(".missing-client-notice");
+    if (!existingNotice) {
+      const notice = document.createElement("div");
+      notice.className = "missing-client-notice";
+      notice.innerHTML = `
+        <div class="missing-client-card">
+          <h2>Accès client requis</h2>
+          <p>Utilise le lien personnalisé reçu par email ou WhatsApp pour accéder à ton espace.</p>
+        </div>
+      `;
+      document.body.appendChild(notice);
     }
   }
 } else {
