@@ -411,8 +411,8 @@ function applyClientConfig(slug, options = {}) {
   if (!baseId || !tableId) return null;
 
   const computedAccessKey = options.accessKeyOverride
-    || (configEntry && configEntry.accessKey)
-    || generateAccessKey(normalizedSlug);
+    || (configEntry && (configEntry.accessKey || generateAccessKey(normalizedSlug)))
+    || null;
 
   if (!options.bypassAccessKey) {
     const providedKey = getParam("key");
