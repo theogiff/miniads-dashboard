@@ -70,6 +70,7 @@ const ADMIN_SESSION_COOKIE = "admin_session";
 const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 
 const signSession = (email) => {
   const exp = Date.now() + ADMIN_SESSION_TTL_MS;
@@ -209,6 +210,66 @@ app.get("/api/admin/me", (req, res) => {
 app.post("/api/admin/logout", (_req, res) => {
   clearSessionCookie(res);
   res.json({ ok: true });
+});
+
+// --- Airtable proxy ---
+app.post("/api/airtable/query", async (req, res) => {
+  try {
+    if (!AIRTABLE_API_KEY) {
+      return res.status(500).json({ error: "Clé Airtable manquante sur le serveur" });
+    }
+    const { baseId, tableId, view, filterByFormula, fields, pageSize = 100, maxRecords } = req.body || {};
+    if (!baseId || !tableId) {
+      return res.status(400).json({ error: "baseId et tableId requis" });
+    }
+
+    const safeBase = encodeURIComponent(String(baseId).trim());
+    const safeTable = encodeURIComponent(String(tableId).trim());
+    const baseUrl = `https://api.airtable.com/v0/${safeBase}/${safeTable}`;
+    const allRecords = [];
+    let offset;
+    let page = 0;
+
+    do {
+      const params = new URLSearchParams();
+      params.set("pageSize", String(pageSize || 100));
+      if (view) params.set("view", String(view).trim());
+      if (filterByFormula) params.set("filterByFormula", String(filterByFormula));
+      if (offset) params.set("offset", offset);
+      if (Array.isArray(fields)) {
+        fields.filter(Boolean).forEach((f) => params.append("fields[]", f));
+      }
+
+      const response = await fetch(`${baseUrl}?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      const text = await response.text();
+      const payload = text ? JSON.parse(text) : null;
+      if (!response.ok) {
+        const errMsg = payload?.error?.message || `${response.status} ${response.statusText}`;
+        throw new Error(errMsg);
+      }
+
+      const records = payload?.records || [];
+      allRecords.push(...records);
+      offset = payload?.offset || null;
+      page += 1;
+      const reachedMax = maxRecords && allRecords.length >= maxRecords;
+      if (reachedMax) break;
+    } while (offset);
+
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      records: maxRecords ? allRecords.slice(0, maxRecords) : allRecords
+    });
+  } catch (e) {
+    console.error("Erreur /api/airtable/query:", e.message);
+    res.status(500).json({ error: "Erreur Airtable" });
+  }
 });
 
 // --- Endpoint debug: voir les dossiers racine des clients ---

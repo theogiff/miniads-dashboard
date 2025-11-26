@@ -260,7 +260,7 @@ function formatDriveClientLabel(value = "") {
 
 // --- Configuration multi-clients ---
 // Renseigne ici ton token d'accès Airtable (lecture seule) commun à tous les clients.
-const DEFAULT_API_KEY = "patcwtLlGwr56ejaH.3366d5e270a09e8874feff12cf371bee81a82b0326a0b3e5da1ed7ced2bdb3de";
+const DEFAULT_API_KEY = "";
 // Paramètres par défaut si tous les clients partagent la même base / table / vue.
 const DEFAULT_BASE_ID = "app4xekxY53MuEQvK";
 const DEFAULT_TABLE_ID = "tblnA0z8ooGAZYXIp";
@@ -2607,64 +2607,55 @@ function computeMovingAverage(values, windowSize = 3) {
 }
 
 async function fetchAirtableRows({ apiKey, baseId, tableId, view, filterByFormula } = {}, options = {}) {
-  if (!apiKey || !baseId || !tableId) {
+  if (!baseId || !tableId) {
     throw new Error("Identifiants Airtable manquants.");
   }
 
-  const safeBase = encodeURIComponent(baseId.trim());
-  const safeTable = encodeURIComponent(tableId.trim());
-  const baseUrl = `https://api.airtable.com/v0/${safeBase}/${safeTable}`;
   const allRows = [];
   const fields = Array.isArray(options.fields) ? options.fields.filter(Boolean) : null;
-  let offset;
 
-  do {
-    const params = new URLSearchParams();
-    params.set("pageSize", "100");
-    if (view) params.set("view", view.trim());
-    if (filterByFormula) params.set("filterByFormula", filterByFormula);
-    if (offset) params.set("offset", offset);
-    if (fields) fields.forEach(field => params.append("fields[]", field));
+  const response = await fetch("/api/airtable/query", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      baseId,
+      tableId,
+      view,
+      filterByFormula,
+      fields,
+      pageSize: 100
+    })
+  });
 
-    const response = await fetch(`${baseUrl}?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey.trim()}`,
-        "Content-Type": "application/json"
-      },
-      cache: "no-store"
+  const payloadText = await response.text();
+  let payload;
+  try {
+    payload = payloadText ? JSON.parse(payloadText) : null;
+  } catch (err) {
+    console.error("Réponse proxy Airtable invalide :", payloadText);
+    throw new Error("Réponse Airtable illisible. Vérifie les identifiants.");
+  }
+
+  if (!response.ok) {
+    const errMsg = payload && payload.error ? payload.error : `${response.status} ${response.statusText}`;
+    throw new Error(`Airtable : ${errMsg}`);
+  }
+
+  const records = (payload && payload.records) || [];
+  records.forEach(record => {
+    const fieldsData = record.fields || {};
+    const row = {};
+    Object.keys(fieldsData).forEach(key => {
+      row[key] = flattenAirtableValue(fieldsData[key]);
     });
-
-    const payloadText = await response.text();
-    let payload;
-    try {
-      payload = payloadText ? JSON.parse(payloadText) : null;
-    } catch (err) {
-      console.error("Réponse Airtable invalide :", payloadText);
-      throw new Error("Réponse Airtable illisible. Vérifie les identifiants.");
+    if (!row.created_time && record.createdTime) {
+      row.created_time = record.createdTime;
     }
-
-    if (!response.ok) {
-      const errMsg = payload && payload.error && payload.error.message
-        ? payload.error.message
-        : `${response.status} ${response.statusText}`;
-      throw new Error(`Airtable : ${errMsg}`);
-    }
-
-    const records = (payload && payload.records) || [];
-    records.forEach(record => {
-      const fieldsData = record.fields || {};
-      const row = {};
-      Object.keys(fieldsData).forEach(key => {
-        row[key] = flattenAirtableValue(fieldsData[key]);
-      });
-      if (!row.created_time && record.createdTime) {
-        row.created_time = record.createdTime;
-      }
-      allRows.push(row);
-    });
-
-    offset = payload && payload.offset;
-  } while (offset);
+    allRows.push(row);
+  });
 
   return allRows;
 }
