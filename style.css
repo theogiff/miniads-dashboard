@@ -787,6 +787,7 @@ body.admin-mode .foot {
   border: 1px solid var(--border-soft);
   backdrop-filter: blur(var(--blur-soft));
   box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
 }
 
 .summary {
@@ -1949,6 +1950,34 @@ body.admin-mode .foot {
 }
 
 @media (max-width: 1024px) {
+  .client-container {
+    gap: 20px;
+  }
+
+  .client-main {
+    padding: 0 18px 64px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .topbar-name {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .topbar-heading h1 {
+    font-size: 2rem;
+  }
+
   .admin-layout {
     flex-direction: column;
     padding: 32px 24px;
@@ -2041,10 +2070,61 @@ body.admin-mode .foot {
 @media (max-width: 720px) {
   .client-container {
     padding: 22px 18px;
+    gap: 16px;
+  }
+
+  .client-main {
+    padding: 0 12px 56px;
+  }
+
+  .client-sidebar {
+    padding: 18px;
+    border-radius: var(--radius-lg);
+  }
+
+  .client-sidebar-inner {
+    gap: 18px;
+  }
+
+  .client-sidebar-nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .client-nav-link {
+    font-size: 0.92rem;
+  }
+
+  .topbar {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .topbar-heading h1 {
+    font-size: 1.65rem;
+  }
+
+  .topbar-subtitle {
+    font-size: 0.94rem;
   }
 
   .hero-kpi-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hero {
+    padding: 22px;
+  }
+
+  .hero-card {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .hero-card-value {
+    font-size: 1.9rem;
   }
 
   .table-wrapper {
@@ -2098,6 +2178,46 @@ body.admin-mode .foot {
 
   #copyShareLink {
     width: 100%;
+  }
+
+  .miniatures-view {
+    padding: 18px;
+  }
+
+  .miniatures-embed-frame {
+    min-height: 220px;
+  }
+
+  .miniatures-embed-frame iframe {
+    height: 240px;
+  }
+
+  .mini-switch,
+  .miniatures-switch {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .extension-hero {
+    padding: 20px;
+  }
+
+  .admin-layout {
+    padding: 28px 18px;
+    gap: 18px;
+  }
+
+  .admin-header {
+    padding: 22px;
+  }
+
+  .admin-dashboard-header {
+    padding: 18px;
+  }
+
+  .admin-kpi-strip {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
 }
 
