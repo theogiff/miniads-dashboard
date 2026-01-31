@@ -146,6 +146,14 @@ function formatCount(value) {
     : value.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
 }
 
+function formatCompactCount(value) {
+  if (!Number.isFinite(value)) return "0";
+  return new Intl.NumberFormat("fr-FR", {
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(value);
+}
+
 function extractFirstUrl(value) {
   if (!value) return "";
   const clean = value.replace(/""/g, '"');
@@ -853,6 +861,24 @@ const extensionInstallBtn = document.getElementById("extensionInstallBtn");
 const extensionDocBtn = document.getElementById("extensionDocBtn");
 const extensionInstallBtnInline = document.getElementById("extensionInstallBtnInline");
 const topbar = document.querySelector(".topbar");
+const youtubeForm = document.getElementById("youtubeAnalysisForm");
+const youtubeUrlInput = document.getElementById("youtubeChannelUrl");
+const youtubeSubmitBtn = document.getElementById("youtubeSubmitBtn");
+const youtubeStatus = document.getElementById("youtubeStatus");
+const youtubeChannelCard = document.getElementById("youtubeChannelCard");
+const youtubeChannelAvatar = document.getElementById("youtubeChannelAvatar");
+const youtubeChannelName = document.getElementById("youtubeChannelName");
+const youtubeChannelDescription = document.getElementById("youtubeChannelDescription");
+const youtubeChannelMeta = document.getElementById("youtubeChannelMeta");
+const youtubeChannelLink = document.getElementById("youtubeChannelLink");
+const youtubeKpiSubscribers = document.getElementById("youtubeKpiSubscribers");
+const youtubeKpiViews = document.getElementById("youtubeKpiViews");
+const youtubeKpiVideos = document.getElementById("youtubeKpiVideos");
+const youtubeKpiAvgViews = document.getElementById("youtubeKpiAvgViews");
+const youtubeViewsChartEl = document.getElementById("youtubeViewsChart");
+const youtubeTopVideos = document.getElementById("youtubeTopVideos");
+const youtubeInsightsList = document.getElementById("youtubeInsightsList");
+const youtubeInsightsStatus = document.getElementById("youtubeInsightsStatus");
 
 async function fetchDriveFilesForClient(slug) {
   const res = await fetch(
@@ -908,6 +934,317 @@ function initializeMiniaturesFromUrl() {
 }
 
 initializeMiniaturesFromUrl();
+
+// --- Analyse YouTube ---
+let youtubeViewsChart = null;
+let youtubeRequestId = 0;
+
+function setYoutubeStatus(message, type = "") {
+  if (!youtubeStatus) return;
+  youtubeStatus.textContent = message || "";
+  youtubeStatus.classList.toggle("is-error", type === "error");
+  youtubeStatus.classList.toggle("is-success", type === "success");
+}
+
+function setYoutubeInsightsStatus(message, type = "") {
+  if (!youtubeInsightsStatus) return;
+  youtubeInsightsStatus.textContent = message || "";
+  youtubeInsightsStatus.classList.toggle("is-error", type === "error");
+  youtubeInsightsStatus.classList.toggle("is-success", type === "success");
+}
+
+function setYoutubeLoading(isLoading) {
+  if (youtubeSubmitBtn) {
+    youtubeSubmitBtn.disabled = isLoading;
+    youtubeSubmitBtn.textContent = isLoading ? "Analyse..." : "Analyser";
+  }
+  if (youtubeForm) {
+    youtubeForm.setAttribute("aria-busy", isLoading ? "true" : "false");
+  }
+}
+
+function formatIsoDuration(value = "") {
+  const match = String(value).match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return "—";
+  const hours = Number.parseInt(match[1] || "0", 10);
+  const minutes = Number.parseInt(match[2] || "0", 10);
+  const seconds = Number.parseInt(match[3] || "0", 10);
+  const total = hours * 3600 + minutes * 60 + seconds;
+  if (!total) return "—";
+  const pad = (num) => String(num).padStart(2, "0");
+  if (hours > 0) {
+    return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+  }
+  return `${minutes}:${pad(seconds)}`;
+}
+
+function updateYoutubeChannelCard(channel = {}) {
+  if (!youtubeChannelCard) return;
+  youtubeChannelCard.classList.remove("hidden");
+  if (youtubeChannelAvatar) {
+    youtubeChannelAvatar.src = channel.thumbnail || "";
+    youtubeChannelAvatar.alt = channel.title ? `Chaîne ${channel.title}` : "Chaîne YouTube";
+  }
+  if (youtubeChannelName) {
+    youtubeChannelName.textContent = channel.title || "Chaîne YouTube";
+  }
+  if (youtubeChannelDescription) {
+    youtubeChannelDescription.textContent = channel.description || "Description non disponible.";
+  }
+  if (youtubeChannelMeta) {
+    const metaParts = [];
+    if (channel.customUrl) metaParts.push(channel.customUrl);
+    if (channel.publishedAt) metaParts.push(`Créée le ${formatDate(channel.publishedAt)}`);
+    if (channel.country) metaParts.push(channel.country);
+    youtubeChannelMeta.textContent = metaParts.join(" • ") || "—";
+  }
+  if (youtubeChannelLink) {
+    const fallbackUrl = channel.id ? `https://www.youtube.com/channel/${channel.id}` : "#";
+    youtubeChannelLink.href = channel.url || fallbackUrl;
+    youtubeChannelLink.setAttribute("aria-disabled", channel.url || channel.id ? "false" : "true");
+  }
+}
+
+function updateYoutubeKpis(metrics = {}) {
+  if (youtubeKpiSubscribers) {
+    youtubeKpiSubscribers.textContent = formatCompactCount(metrics.subscribers || 0);
+  }
+  if (youtubeKpiViews) {
+    youtubeKpiViews.textContent = formatCompactCount(metrics.views || 0);
+  }
+  if (youtubeKpiVideos) {
+    youtubeKpiVideos.textContent = formatCompactCount(metrics.videos || 0);
+  }
+  if (youtubeKpiAvgViews) {
+    youtubeKpiAvgViews.textContent = formatCompactCount(metrics.avgViews || 0);
+  }
+}
+
+function updateYoutubeViewsChart(videos = []) {
+  if (!youtubeViewsChartEl || typeof Chart === "undefined") return;
+  const safeVideos = videos.slice(0, 6);
+  const labels = safeVideos.map(video => truncateText(video.title || "Vidéo", 22));
+  const data = safeVideos.map(video => Number(video.viewCount) || 0);
+  const styles = getComputedStyle(document.documentElement);
+  const accent = styles.getPropertyValue("--accent").trim() || "#f59a2d";
+  const muted = styles.getPropertyValue("--text-soft").trim() || "#a0a8c3";
+  const grid = styles.getPropertyValue("--border-divider").trim() || "rgba(66, 78, 129, 0.08)";
+
+  if (youtubeViewsChart) {
+    youtubeViewsChart.data.labels = labels;
+    youtubeViewsChart.data.datasets[0].data = data;
+    youtubeViewsChart.update();
+    return;
+  }
+
+  youtubeViewsChart = new Chart(youtubeViewsChartEl, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Vues",
+          data,
+          backgroundColor: `${accent}66`,
+          borderColor: accent,
+          borderWidth: 2,
+          borderRadius: 12,
+          maxBarThickness: 42
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          ticks: {
+            color: muted,
+            maxRotation: 0
+          },
+          grid: {
+            display: false
+          }
+        },
+        y: {
+          ticks: {
+            color: muted,
+            callback: value => formatCompactCount(value)
+          },
+          grid: {
+            color: grid
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${formatCompactCount(ctx.parsed.y)} vues`
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderYoutubeTopVideos(videos = []) {
+  if (!youtubeTopVideos) return;
+  youtubeTopVideos.innerHTML = "";
+  if (!videos.length) {
+    youtubeTopVideos.innerHTML = `<div class="youtube-empty">Aucune donnée disponible.</div>`;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  videos.forEach((video, index) => {
+    const card = document.createElement("article");
+    card.className = "youtube-video";
+
+    const thumb = document.createElement("img");
+    thumb.className = "youtube-video-thumb";
+    thumb.src = video.thumbnail || "";
+    thumb.alt = video.title ? `Miniature ${video.title}` : "Miniature vidéo";
+    thumb.loading = "lazy";
+    card.appendChild(thumb);
+
+    const body = document.createElement("div");
+    body.className = "youtube-video-body";
+
+    const title = document.createElement("div");
+    title.className = "youtube-video-title";
+    title.textContent = video.title || `Vidéo ${index + 1}`;
+    body.appendChild(title);
+
+    const meta = document.createElement("div");
+    meta.className = "youtube-video-meta";
+    const metaItems = [
+      `${formatCompactCount(Number(video.viewCount) || 0)} vues`,
+      video.likeCount ? `${formatCompactCount(Number(video.likeCount))} likes` : null,
+      video.commentCount ? `${formatCompactCount(Number(video.commentCount))} commentaires` : null,
+      video.duration ? formatIsoDuration(video.duration) : null
+    ].filter(Boolean);
+    metaItems.forEach(item => {
+      const span = document.createElement("span");
+      span.textContent = item;
+      meta.appendChild(span);
+    });
+    body.appendChild(meta);
+
+    card.appendChild(body);
+
+    const action = document.createElement("a");
+    action.className = "mini-card-btn youtube-video-action";
+    action.href = video.url || "#";
+    action.target = "_blank";
+    action.rel = "noopener";
+    action.textContent = "Voir";
+    card.appendChild(action);
+
+    fragment.appendChild(card);
+  });
+
+  youtubeTopVideos.appendChild(fragment);
+}
+
+function renderYoutubeInsights(recommendations = []) {
+  if (!youtubeInsightsList) return;
+  youtubeInsightsList.innerHTML = "";
+  if (!recommendations.length) {
+    youtubeInsightsList.innerHTML = `<div class="youtube-empty">Aucune recommandation pour le moment.</div>`;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  recommendations.forEach((rec, index) => {
+    const card = document.createElement("article");
+    card.className = "youtube-insight";
+
+    const content = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "youtube-insight-title";
+    title.textContent = rec.title || `Recommandation ${index + 1}`;
+    const body = document.createElement("div");
+    body.className = "youtube-insight-body";
+    body.textContent = rec.detail || rec.description || rec.text || "";
+    content.appendChild(title);
+    content.appendChild(body);
+    card.appendChild(content);
+    fragment.appendChild(card);
+  });
+
+  youtubeInsightsList.appendChild(fragment);
+}
+
+async function fetchYoutubeAnalysis(url) {
+  const response = await fetch(`/api/youtube/channel?url=${encodeURIComponent(url)}`);
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.error || "Impossible de récupérer les données YouTube.");
+  }
+  return payload;
+}
+
+async function fetchYoutubeInsights(payload, requestId) {
+  if (!payload) return;
+  try {
+    setYoutubeInsightsStatus("Analyse IA en cours…");
+    const response = await fetch("/api/ai/youtube-insights", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channel: payload.channel,
+        metrics: payload.metrics,
+        topVideos: payload.topVideos
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.error || "Analyse IA indisponible.");
+    }
+    if (requestId !== youtubeRequestId) return;
+    renderYoutubeInsights(data.recommendations || []);
+    setYoutubeInsightsStatus(data.summary || "Recommandations générées.", "success");
+  } catch (error) {
+    if (requestId !== youtubeRequestId) return;
+    renderYoutubeInsights([]);
+    setYoutubeInsightsStatus("Impossible de générer les recommandations.", "error");
+    console.error("Erreur insights IA:", error);
+  }
+}
+
+if (youtubeForm) {
+  youtubeForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!youtubeUrlInput) return;
+    const url = youtubeUrlInput.value.trim();
+    if (!url) return;
+    const requestId = ++youtubeRequestId;
+    setYoutubeLoading(true);
+    setYoutubeStatus("Analyse en cours…");
+    setYoutubeInsightsStatus("Analyse IA en attente…");
+    try {
+      const data = await fetchYoutubeAnalysis(url);
+      if (requestId !== youtubeRequestId) return;
+      updateYoutubeChannelCard(data.channel || {});
+      updateYoutubeKpis(data.metrics || {});
+      updateYoutubeViewsChart(data.topVideos || []);
+      renderYoutubeTopVideos(data.topVideos || []);
+      setYoutubeStatus(`Chaîne analysée : ${data.channel?.title || "YouTube"}`, "success");
+      setYoutubeLoading(false);
+      fetchYoutubeInsights(data, requestId);
+    } catch (error) {
+      if (requestId !== youtubeRequestId) return;
+      setYoutubeLoading(false);
+      setYoutubeStatus(error.message || "Erreur lors de l’analyse.", "error");
+      renderYoutubeInsights([]);
+      renderYoutubeTopVideos([]);
+      console.error("Erreur analyse YouTube:", error);
+    }
+  });
+}
 
 function openMiniaturePip(file = {}) {
   if (!pipOverlay || !pipImage) return;

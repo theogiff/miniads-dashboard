@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import crypto from "node:crypto";
 import { google } from "googleapis";
+import NodeCache from "node-cache";
 
 const app = express();
 app.use(cors());
@@ -71,6 +72,15 @@ const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+const MISTRAL_API_BASE = process.env.MISTRAL_API_BASE || "https://api.mistral.ai/v1";
+const MISTRAL_MODEL = process.env.MISTRAL_MODEL || "mistral-small-latest";
+const YOUTUBE_CACHE_TTL = Number.parseInt(process.env.YOUTUBE_CACHE_TTL || "600", 10);
+const youtubeCache = new NodeCache({
+  stdTTL: Number.isFinite(YOUTUBE_CACHE_TTL) ? YOUTUBE_CACHE_TTL : 600,
+  checkperiod: 120
+});
 
 const signSession = (email) => {
   const exp = Date.now() + ADMIN_SESSION_TTL_MS;
@@ -226,6 +236,401 @@ const isAdminRequest = (req) => {
   }
 };
 
+const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
+
+const toSafeNumber = (value) => {
+  const num = Number.parseInt(value, 10);
+  return Number.isFinite(num) ? num : 0;
+};
+
+const extractYoutubeHint = (input = "") => {
+  const raw = String(input || "").trim();
+  if (!raw) return null;
+  if (!/^https?:\/\//i.test(raw)) {
+    if (/^UC[a-zA-Z0-9_-]{20,}$/.test(raw)) {
+      return { type: "id", value: raw };
+    }
+    if (raw.startsWith("@")) {
+      return { type: "handle", value: raw.slice(1) };
+    }
+    return { type: "search", value: raw };
+  }
+
+  let url;
+  try {
+    url = new URL(raw);
+  } catch (_e) {
+    return { type: "search", value: raw };
+  }
+
+  const host = url.hostname.replace(/^www\./, "");
+  const path = url.pathname.replace(/\/+$/, "");
+  const videoParam = url.searchParams.get("v");
+  if (videoParam) return { type: "video", value: videoParam };
+  if (host === "youtu.be") {
+    const videoId = path.slice(1);
+    if (videoId) return { type: "video", value: videoId };
+  }
+  if (path.startsWith("/channel/")) {
+    return { type: "id", value: path.split("/")[2] };
+  }
+  if (path.startsWith("/@")) {
+    return { type: "handle", value: path.slice(2) };
+  }
+  if (path.startsWith("/user/")) {
+    return { type: "user", value: path.split("/")[2] };
+  }
+  if (path.startsWith("/c/")) {
+    return { type: "search", value: path.split("/")[2] };
+  }
+  const fallback = path.split("/")[1];
+  if (fallback?.startsWith("@")) {
+    return { type: "handle", value: fallback.slice(1) };
+  }
+  if (fallback) {
+    return { type: "search", value: fallback };
+  }
+  return { type: "search", value: raw };
+};
+
+const youtubeApiRequest = async (endpoint, params = {}) => {
+  if (!YOUTUBE_API_KEY) {
+    throw new Error("Clé YouTube manquante");
+  }
+  const cacheKey = `yt:${endpoint}:${JSON.stringify(params)}`;
+  const cached = youtubeCache.get(cacheKey);
+  if (cached) return cached;
+
+  const query = new URLSearchParams({ ...params, key: YOUTUBE_API_KEY });
+  const response = await fetch(`${YOUTUBE_API_BASE}/${endpoint}?${query.toString()}`);
+  const text = await response.text();
+  let payload = null;
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch (_e) {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    const errMsg = payload?.error?.message || `${response.status} ${response.statusText}`;
+    throw new Error(errMsg);
+  }
+  youtubeCache.set(cacheKey, payload);
+  return payload;
+};
+
+const fetchChannelById = async (channelId) => {
+  if (!channelId) return null;
+  const payload = await youtubeApiRequest("channels", {
+    part: "snippet,statistics,brandingSettings",
+    id: channelId
+  });
+  return payload?.items?.[0] || null;
+};
+
+const fetchChannelByParam = async (paramKey, value) => {
+  if (!value) return null;
+  const payload = await youtubeApiRequest("channels", {
+    part: "snippet,statistics,brandingSettings",
+    [paramKey]: value
+  });
+  return payload?.items?.[0] || null;
+};
+
+const fetchChannelIdFromVideo = async (videoId) => {
+  if (!videoId) return null;
+  const payload = await youtubeApiRequest("videos", {
+    part: "snippet",
+    id: videoId
+  });
+  return payload?.items?.[0]?.snippet?.channelId || null;
+};
+
+const fetchChannelIdFromSearch = async (query) => {
+  if (!query) return null;
+  const payload = await youtubeApiRequest("search", {
+    part: "snippet",
+    type: "channel",
+    q: query,
+    maxResults: 1
+  });
+  return (
+    payload?.items?.[0]?.snippet?.channelId ||
+    payload?.items?.[0]?.id?.channelId ||
+    null
+  );
+};
+
+const resolveChannelFromInput = async (input) => {
+  const hint = extractYoutubeHint(input);
+  if (!hint) return null;
+
+  if (hint.type === "id") {
+    return fetchChannelById(hint.value);
+  }
+
+  if (hint.type === "handle") {
+    try {
+      const channel = await fetchChannelByParam("forHandle", hint.value);
+      if (channel) return channel;
+    } catch (_e) {
+      // Fallback to search.
+    }
+  }
+
+  if (hint.type === "user") {
+    try {
+      const channel = await fetchChannelByParam("forUsername", hint.value);
+      if (channel) return channel;
+    } catch (_e) {
+      // Fallback to search.
+    }
+  }
+
+  if (hint.type === "video") {
+    const channelId = await fetchChannelIdFromVideo(hint.value);
+    if (channelId) {
+      return fetchChannelById(channelId);
+    }
+  }
+
+  const channelId = await fetchChannelIdFromSearch(hint.value);
+  if (channelId) {
+    return fetchChannelById(channelId);
+  }
+  return null;
+};
+
+const normalizeChannel = (channel) => {
+  if (!channel) return null;
+  const snippet = channel.snippet || {};
+  const branding = channel.brandingSettings || {};
+  const thumbnails = snippet.thumbnails || {};
+  const thumbnail =
+    thumbnails.high?.url ||
+    thumbnails.medium?.url ||
+    thumbnails.default?.url ||
+    "";
+  const customUrl = snippet.customUrl
+    ? (snippet.customUrl.startsWith("@") ? snippet.customUrl : `@${snippet.customUrl}`)
+    : "";
+  const url = channel.id
+    ? `https://www.youtube.com/channel/${channel.id}`
+    : customUrl
+      ? `https://www.youtube.com/${customUrl}`
+      : "";
+  return {
+    id: channel.id || "",
+    title: snippet.title || "",
+    description: snippet.description || "",
+    customUrl,
+    publishedAt: snippet.publishedAt || "",
+    country: snippet.country || "",
+    thumbnail,
+    bannerUrl: branding?.image?.bannerExternalUrl || "",
+    url
+  };
+};
+
+const buildMetrics = (stats = {}) => {
+  const subscribers = toSafeNumber(stats.subscriberCount);
+  const views = toSafeNumber(stats.viewCount);
+  const videos = toSafeNumber(stats.videoCount);
+  const avgViews = videos ? Math.round(views / videos) : 0;
+  return { subscribers, views, videos, avgViews };
+};
+
+const normalizeVideos = (items = []) => {
+  return items.map((item) => {
+    const snippet = item.snippet || {};
+    const stats = item.statistics || {};
+    const content = item.contentDetails || {};
+    const thumbnails = snippet.thumbnails || {};
+    const thumbnail =
+      thumbnails.high?.url ||
+      thumbnails.medium?.url ||
+      thumbnails.default?.url ||
+      "";
+    return {
+      id: item.id || "",
+      title: snippet.title || "",
+      publishedAt: snippet.publishedAt || "",
+      thumbnail,
+      viewCount: toSafeNumber(stats.viewCount),
+      likeCount: toSafeNumber(stats.likeCount),
+      commentCount: toSafeNumber(stats.commentCount),
+      duration: content.duration || "",
+      url: item.id ? `https://www.youtube.com/watch?v=${item.id}` : ""
+    };
+  });
+};
+
+const fetchTopVideos = async (channelId) => {
+  if (!channelId) return [];
+  const search = await youtubeApiRequest("search", {
+    part: "id",
+    channelId,
+    order: "viewCount",
+    maxResults: 6,
+    type: "video"
+  });
+  const ids = (search?.items || [])
+    .map((item) => item?.id?.videoId)
+    .filter(Boolean);
+  if (!ids.length) return [];
+
+  const videosPayload = await youtubeApiRequest("videos", {
+    part: "snippet,statistics,contentDetails",
+    id: ids.join(",")
+  });
+  const normalized = normalizeVideos(videosPayload?.items || []);
+  return normalized.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+};
+
+const buildFallbackRecommendations = (metrics = {}, videos = []) => {
+  const recommendations = [];
+  const subscribers = Number(metrics.subscribers) || 0;
+  const avgViews = Number(metrics.avgViews) || 0;
+  const totalVideos = Number(metrics.videos) || 0;
+
+  if (totalVideos < 20) {
+    recommendations.push({
+      title: "Renforcer la cadence",
+      detail: "Augmente légèrement la fréquence de publication pour installer une routine chez les abonnés."
+    });
+  }
+
+  if (subscribers && avgViews && avgViews < subscribers * 0.1) {
+    recommendations.push({
+      title: "Optimiser titres et miniatures",
+      detail: "Teste des titres plus précis et des miniatures plus contrastées pour améliorer le taux de clic."
+    });
+  }
+
+  if (videos.length) {
+    const best = videos[0];
+    recommendations.push({
+      title: "Capitaliser sur le top contenu",
+      detail: `Le format "${best.title || "Top vidéo"}" performe bien. Décline-le en série ou en spin-off.`
+    });
+  }
+
+  recommendations.push({
+    title: "Structurer la prochaine série",
+    detail: "Planifie 3 à 5 vidéos reliées pour booster le binge et la rétention sur la chaîne."
+  });
+
+  return recommendations.slice(0, 4);
+};
+
+const requestMistralInsights = async (payload, fallback) => {
+  if (!MISTRAL_API_KEY) {
+    return {
+      recommendations: fallback,
+      summary: "Ajoute une clé Mistral pour débloquer les recommandations IA.",
+      source: "fallback"
+    };
+  }
+
+  const safePayload = {
+    channel: {
+      title: payload?.channel?.title || "",
+      description: payload?.channel?.description || "",
+      subscribers: payload?.metrics?.subscribers || 0,
+      views: payload?.metrics?.views || 0,
+      videos: payload?.metrics?.videos || 0,
+      avgViews: payload?.metrics?.avgViews || 0
+    },
+    topVideos: (payload?.topVideos || []).slice(0, 5).map((video) => ({
+      title: video.title || "",
+      viewCount: video.viewCount || 0,
+      likeCount: video.likeCount || 0,
+      commentCount: video.commentCount || 0
+    }))
+  };
+
+  const response = await fetch(`${MISTRAL_API_BASE}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${MISTRAL_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: MISTRAL_MODEL,
+      temperature: 0.3,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Tu es un analyste croissance YouTube. Donne des recommandations actionnables, courtes et précises."
+        },
+        {
+          role: "user",
+          content: `Voici les données : ${JSON.stringify(safePayload)}. Réponds en JSON avec la forme {"summary":"...","recommendations":[{"title":"...","detail":"..."}]}.`
+        }
+      ]
+    })
+  });
+
+  const text = await response.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (_e) {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const errMsg = data?.error?.message || `${response.status} ${response.statusText}`;
+    throw new Error(errMsg);
+  }
+
+  const content = data?.choices?.[0]?.message?.content?.trim() || "";
+  const cleaned = content
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  let parsed = null;
+  try {
+    parsed = cleaned ? JSON.parse(cleaned) : null;
+  } catch (_e) {
+    parsed = null;
+  }
+
+  if (parsed?.recommendations) {
+    const list = Array.isArray(parsed.recommendations) ? parsed.recommendations : [];
+    const normalized = list.map((item, index) => {
+      if (typeof item === "string") {
+        return { title: `Conseil ${index + 1}`, detail: item };
+      }
+      return item;
+    });
+    return {
+      recommendations: normalized,
+      summary: parsed.summary || "Recommandations générées.",
+      source: "mistral"
+    };
+  }
+
+  const lines = content
+    .split("\n")
+    .map((line) => line.replace(/^[-•*]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  const recommendations = lines.map((line, index) => ({
+    title: `Conseil ${index + 1}`,
+    detail: line
+  }));
+
+  return {
+    recommendations: recommendations.length ? recommendations : fallback,
+    summary: "Recommandations générées.",
+    source: "mistral"
+  };
+};
+
 // --- Airtable proxy ---
 app.post("/api/airtable/query", async (req, res) => {
   try {
@@ -283,6 +688,60 @@ app.post("/api/airtable/query", async (req, res) => {
   } catch (e) {
     console.error("Erreur /api/airtable/query:", e.message);
     res.status(500).json({ error: "Erreur Airtable" });
+  }
+});
+
+// --- YouTube analytics ---
+app.get("/api/youtube/channel", async (req, res) => {
+  try {
+    if (!YOUTUBE_API_KEY) {
+      return res.status(500).json({ error: "Clé YouTube manquante sur le serveur" });
+    }
+    const { url } = req.query || {};
+    if (!url) {
+      return res.status(400).json({ error: "Paramètre url requis" });
+    }
+    const channel = await resolveChannelFromInput(String(url));
+    if (!channel) {
+      return res.status(404).json({ error: "Chaîne YouTube introuvable" });
+    }
+    const metrics = buildMetrics(channel.statistics || {});
+    const topVideos = await fetchTopVideos(channel.id);
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      channel: normalizeChannel(channel),
+      metrics,
+      topVideos
+    });
+  } catch (e) {
+    console.error("Erreur /api/youtube/channel:", e.message);
+    res.status(500).json({ error: "Erreur YouTube" });
+  }
+});
+
+app.post("/api/ai/youtube-insights", async (req, res) => {
+  try {
+    const { channel, metrics, topVideos } = req.body || {};
+    if (!metrics && !channel) {
+      return res.status(400).json({ error: "Données insuffisantes pour l’analyse" });
+    }
+    const fallback = buildFallbackRecommendations(metrics || {}, topVideos || []);
+    try {
+      const result = await requestMistralInsights({ channel, metrics, topVideos }, fallback);
+      res.setHeader("Cache-Control", "no-store");
+      return res.json(result);
+    } catch (error) {
+      console.error("Erreur Mistral:", error.message);
+      res.setHeader("Cache-Control", "no-store");
+      return res.json({
+        recommendations: fallback,
+        summary: "Insights IA en mode secours.",
+        source: "fallback"
+      });
+    }
+  } catch (e) {
+    console.error("Erreur /api/ai/youtube-insights:", e.message);
+    res.status(500).json({ error: "Erreur IA" });
   }
 });
 
