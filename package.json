@@ -4,6 +4,7 @@
   "description": "",
   "main": "admin-auth.js",
   "scripts": {
+    "start": "node server/index.js",
     "dev": "node --env-file=server/.env server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
