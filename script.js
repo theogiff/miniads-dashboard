@@ -271,20 +271,20 @@ const CLIENTS = {
   // Exemple:
   // oseille: {
   //   label: "OseilleTV",
-//   baseId: "appXXXXXXXXXXXXXX",
-//   tableId: "tblYYYYYYYYYYYY",
-//   view: "Vue filtrée Oseille",
-//   accessKey: "client-secret-oseille", // requis dans l'URL ?key=...
-//   filterByFormula: "{Créateurs} = 'OseilleTV'",
-//   apiKey: "", // (optionnel) pour override du token global
-//   greeting: ["Hey Oseille 👋 ravi de te revoir !", "Voici ton espace client..."], // (optionnel)
-//   driveFolders: [
-//     { id: "1AbcXYZ", label: "Miniatures validées", description: "Toutes les miniatures prêtes à publier." },
-//     "https://drive.google.com/drive/folders/EXEMPLE_AUTRE_DOSSIER"
-//   ], // (optionnel) plusieurs dossiers possibles
-//   driveFolderId: "1AbcXYZ", // raccourci si un seul dossier
-//   driveFolderUrl: "https://drive.google.com/drive/folders/1AbcXYZ" // idem mais via URL
-// }
+  //   baseId: "appXXXXXXXXXXXXXX",
+  //   tableId: "tblYYYYYYYYYYYY",
+  //   view: "Vue filtrée Oseille",
+  //   accessKey: "client-secret-oseille", // requis dans l'URL ?key=...
+  //   filterByFormula: "{Créateurs} = 'OseilleTV'",
+  //   apiKey: "", // (optionnel) pour override du token global
+  //   greeting: ["Hey Oseille 👋 ravi de te revoir !", "Voici ton espace client..."], // (optionnel)
+  //   driveFolders: [
+  //     { id: "1AbcXYZ", label: "Miniatures validées", description: "Toutes les miniatures prêtes à publier." },
+  //     "https://drive.google.com/drive/folders/EXEMPLE_AUTRE_DOSSIER"
+  //   ], // (optionnel) plusieurs dossiers possibles
+  //   driveFolderId: "1AbcXYZ", // raccourci si un seul dossier
+  //   driveFolderUrl: "https://drive.google.com/drive/folders/1AbcXYZ" // idem mais via URL
+  // }
 };
 
 const ADMIN_DEFAULTS = {
@@ -526,7 +526,7 @@ function renderRows(rows) {
     "titre de la video",
     "titre de la miniature"
   ]);
-let creatorField = resolveFieldName(allKeys, null, [
+  let creatorField = resolveFieldName(allKeys, null, [
     "pseudo",
     "createur",
     "créateur",
@@ -540,8 +540,8 @@ let creatorField = resolveFieldName(allKeys, null, [
     "channel",
     "creator",
     "client final"
-]);
-let quantityField = resolveFieldName(allKeys, null, [
+  ]);
+  let quantityField = resolveFieldName(allKeys, null, [
     "nombre de miniatures",
     "nb miniatures",
     "miniatures commandées",
@@ -551,36 +551,36 @@ let quantityField = resolveFieldName(allKeys, null, [
     "quantité",
     "count",
     "quantity",
-  "volume"
-]);
-let requestDateField = resolveFieldName(allKeys, null, [
-  "date de la demande",
-  "demande le",
-  "date demande",
-  "requested at",
-  "request date",
-  "created",
-  "created time"
-]);
-let creationDateField = resolveFieldName(allKeys, null, [
-  "date de creation",
-  "date de création",
-  "creation",
-  "date de production",
-  "date de rendu",
-  "production date",
-  "created at"
-]);
-let statusField = resolveFieldName(allKeys, null, [
-  "status de la commande",
-  "statut de la commande",
-  "statut",
-  "status",
-  "etat",
-  "état",
-  "state",
-  "progression"
-]);
+    "volume"
+  ]);
+  let requestDateField = resolveFieldName(allKeys, null, [
+    "date de la demande",
+    "demande le",
+    "date demande",
+    "requested at",
+    "request date",
+    "created",
+    "created time"
+  ]);
+  let creationDateField = resolveFieldName(allKeys, null, [
+    "date de creation",
+    "date de création",
+    "creation",
+    "date de production",
+    "date de rendu",
+    "production date",
+    "created at"
+  ]);
+  let statusField = resolveFieldName(allKeys, null, [
+    "status de la commande",
+    "statut de la commande",
+    "statut",
+    "status",
+    "etat",
+    "état",
+    "state",
+    "progression"
+  ]);
   if (!imageField) {
     imageField = allKeys.find(key => {
       const value = String(getFirstNonEmptyValue(rows, key) || "").toLowerCase();
@@ -657,13 +657,13 @@ let statusField = resolveFieldName(allKeys, null, [
   const datePriority = [creationDateField, dateField, requestDateField, "created_time"];
   const sortedRows = Array.isArray(filteredRows)
     ? [...filteredRows].sort((a, b) => {
-        const dateB = getRowDate(b, datePriority);
-        const dateA = getRowDate(a, datePriority);
-        const timeB = dateB ? dateB.getTime() : -Infinity;
-        const timeA = dateA ? dateA.getTime() : -Infinity;
-        if (timeB === timeA) return 0;
-        return timeB - timeA;
-      })
+      const dateB = getRowDate(b, datePriority);
+      const dateA = getRowDate(a, datePriority);
+      const timeB = dateB ? dateB.getTime() : -Infinity;
+      const timeA = dateA ? dateA.getTime() : -Infinity;
+      if (timeB === timeA) return 0;
+      return timeB - timeA;
+    })
     : filteredRows;
   const datasetToRender = Array.isArray(sortedRows) ? sortedRows : filteredRows;
 
@@ -767,7 +767,7 @@ function formatDate(d) {
   if (!d) return "—";
   const dt = new Date(d);
   if (isNaN(dt)) return "—";
-  return dt.toLocaleDateString("fr-FR", { year:"numeric", month:"2-digit", day:"2-digit" });
+  return dt.toLocaleDateString("fr-FR", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
 function formatDateTime(d) {
@@ -1531,9 +1531,9 @@ async function loadAdminDriveDirectory(force = false) {
     const payload = await response.json();
     adminDriveDirectory = Array.isArray(payload)
       ? payload
-          .map(buildDriveDirectoryEntry)
-          .filter(Boolean)
-          .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+        .map(buildDriveDirectoryEntry)
+        .filter(Boolean)
+        .sort((a, b) => a.label.localeCompare(b.label, "fr"))
       : [];
     adminDriveDirectoryLoaded = true;
     renderAdminMiniaturesDirectory(getAdminMiniaturesFilter());
@@ -1863,28 +1863,28 @@ function configureExtensionCta() {
 }
 
 function updateMiniaturesLibrary(config) {
-// --- MODE API ---
-// if (MINIADS_API_MODE) {
-//   if (!miniaturesContent || !miniaturesGrid) return;
-//   const url = new URL(window.location.href);
-//   const clientSlug = url.searchParams.get("client") || "";
-//   miniaturesContent.classList.remove("hidden");
-//   miniaturesEmptyState.classList.add("hidden");
+  // --- MODE API ---
+  // if (MINIADS_API_MODE) {
+  //   if (!miniaturesContent || !miniaturesGrid) return;
+  //   const url = new URL(window.location.href);
+  //   const clientSlug = url.searchParams.get("client") || "";
+  //   miniaturesContent.classList.remove("hidden");
+  //   miniaturesEmptyState.classList.add("hidden");
 
-//   if (miniaturesEmbed) miniaturesEmbed.classList.add("miniatures-embed-unavailable");
-//   if (miniaturesDriveFrame) miniaturesDriveFrame.setAttribute("hidden","hidden");
-//   if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
-//   if (miniaturesExternalLink) miniaturesExternalLink.setAttribute("aria-disabled","true");
+  //   if (miniaturesEmbed) miniaturesEmbed.classList.add("miniatures-embed-unavailable");
+  //   if (miniaturesDriveFrame) miniaturesDriveFrame.setAttribute("hidden","hidden");
+  //   if (miniaturesEmbedHint) miniaturesEmbedHint.classList.add("hidden");
+  //   if (miniaturesExternalLink) miniaturesExternalLink.setAttribute("aria-disabled","true");
 
-//   renderFilesGrid([]);
-//   fetchDriveFilesForClient(clientSlug)
-//     .then(files => renderFilesGrid(files))
-//     .catch(() => {
-//       miniaturesGrid.innerHTML = `<div class="miniatures-empty">Impossible de charger vos miniatures pour le moment.</div>`;
-//     });
+  //   renderFilesGrid([]);
+  //   fetchDriveFilesForClient(clientSlug)
+  //     .then(files => renderFilesGrid(files))
+  //     .catch(() => {
+  //       miniaturesGrid.innerHTML = `<div class="miniatures-empty">Impossible de charger vos miniatures pour le moment.</div>`;
+  //     });
 
-//   return;
-// }
+  //   return;
+  // }
   if (!miniaturesEmptyState || !miniaturesContent) return;
   const folders = config && Array.isArray(config.driveFolders) ? config.driveFolders : [];
   activeDriveFolderIndex = 0;
@@ -3833,7 +3833,7 @@ function initYoutubeAnalysis() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      
+
       const statsData = await statsRes.json();
       if (!statsRes.ok) throw new Error(statsData.error || "Erreur lors de l'analyse YouTube");
 
@@ -3843,7 +3843,7 @@ function initYoutubeAnalysis() {
       document.getElementById("channelCustomUrl").textContent = statsData.customUrl ? `@${statsData.customUrl}` : "";
       document.getElementById("channelSubscribers").textContent = `${formatCount(statsData.subscriberCount)} abonnés`;
       document.getElementById("channelDescription").textContent = statsData.description || "Aucune description.";
-      
+
       document.getElementById("statsSubs").textContent = formatCount(statsData.subscriberCount);
       document.getElementById("statsViews").textContent = formatCount(statsData.viewCount);
       document.getElementById("statsVideos").textContent = statsData.videoCount;
