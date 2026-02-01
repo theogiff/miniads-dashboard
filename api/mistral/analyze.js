@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { stats, channelName, insights, topShorts, topLongVideos } = req.body;
+        const { stats, channelName, insights, topShorts, topLongVideos, recentVideos } = req.body;
         if (!process.env.MISTRAL_API_KEY) {
             return res.status(500).json({ error: "Clé API Mistral manquante" });
         }
@@ -48,6 +48,10 @@ export default async function handler(req, res) {
             ? topLongVideos.map((v, i) => `${i + 1}. "${v.title}" (${v.views} vues, ${v.engagementRate}% eng, ${v.durationFormatted})`).join('\n')
             : "Aucune donnée";
 
+        const recentVideosDetails = recentVideos?.length
+            ? recentVideos.map((v, i) => `${i + 1}. "${v.title}" (${v.views} vues, ${v.engagementRate}% eng, ${v.durationFormatted}, ${v.isShort ? 'Short' : 'Long'})`).join('\n')
+            : "Aucune donnée récente";
+
         // --- PROMPT ULTIME ---
         const prompt = `Agis comme le meilleur Consultant YouTube Stratège au monde (niveau MrBeast/Paddy Galloway). Tu es brutalement honnête, analytique et orienté résultats. Ta mission est d'auditer la chaîne "${channelName || 'Inconnue'}" pour exploser sa croissance.
 
@@ -55,13 +59,13 @@ export default async function handler(req, res) {
 💿 BASE DE DONNÉES ANALYTIQUE
 ═══════════════════════════════════════
 
-� IDENTITÉ:
+👤 IDENTITÉ:
 • Profil: ${channelProfile} (${shortsRatio}% Shorts / ${longRatio}% Longues)
 • Abonnés: ${stats.subscriberCount?.toLocaleString()}
 • Vues Totales: ${stats.viewCount?.toLocaleString()}
 • Ratio Viralité (Vues/Subs): ${viralRatio}% (Moyenne industrielle: 10-20%)
 
-� PERFORMANCE COMPARÉE:
+📊 PERFORMANCE:
 ┌─ SHORTS
 │  • Volume: ${shortsCount} vidéos
 │  • Engagement: ${shortsEng}% (Moyenne: 3-5%)
@@ -76,6 +80,9 @@ export default async function handler(req, res) {
 • Durée "Sweet Spot": ${insights?.optimalDuration?.label} (${insights?.optimalDuration?.avgEngagement}% eng)
 • Timing Idéal: ${insights?.bestPostingDay?.day} à ${insights?.bestPostingTime?.hourFormatted}
 
+📅 10 DERNIÈRES VIDÉOS (Analyse de la Stratégie Actuelle):
+${recentVideosDetails}
+
 ⭐ TOP PERFORMERS (Modèles à suivre):
 Shorts:
 ${topShortsDetails}
@@ -88,26 +95,27 @@ ${topLongDetails}
 ═══════════════════════════════════════
 
 Réponds UNIQUEMENT avec ce code HTML structuré. Sois direct. Pas de bla-bla.
+NE FAIS PAS DE COMPARAISON DIRECTE ENTRE SHORTS ET FORMAT LONG DANS UNE SECTION DÉDIÉE (type "Bataille des Formats").
 
 <div class="ai-audit-container">
 
   <h4>🚨 Diagnostic Vital</h4>
   <p>En 2 phrases percutantes : La chaîne est-elle en bonne santé ? Le ratio viralité de <strong>${viralRatio}%</strong> indique-t-il une audience captive ou fantôme ? Quel est le problème N°1 visible ?</p>
 
-  <h4>⚔️ Bataille des Formats : Le Verdict</h4>
-  <p>Analyse sans pitié. Tes Shorts (${shortsEng}%) vs Tes Longues (${longEng}%).
-  Le format gagnant est <strong>${shortsEng > longEng ? 'SHORTS' : 'LONGUES'}</strong>.
-  Pourquoi ? (Analyse la rétention vs l'effort). Recommandation de mix de contenu précise (ex: 80/20).</p>
-
   <h4>🧬 Analyse ADN des Top Vidéos</h4>
   <p>Regarde les titres et stats des top vidéos ci-dessus. Décode la psychologie :
   Quels mots-clés ? Quelle émotion (Curiosité, Peur, Utilité) ? Quel type de miniature suggéré ?
   Trouve le "Pattern de Succès" unique de cette chaîne.</p>
 
+  <h4>🎬 Stratégie de Contenu (Basé sur les 10 dernières vidéos)</h4>
+  <p>Analyse la tendance des 10 dernières vidéos listées ci-dessus.
+  Quels sujets fonctionnent ? Lesquels floppent ? Y a-t-il une cohérence ?
+  Donne une critique constructive sur la ligne éditoriale récente et comment la pivoter pour plus de vues.</p>
+
   <h4>🚀 Plan d'Attaque (Next Steps)</h4>
   <ul class="ai-action-list">
     <li><strong>Le Hack Immédiat :</strong> Une action qui prend 5 min pour booster la prochaine vidéo.</li>
-    <li><strong>La Stratégie Contenu :</strong> Basé sur la durée optimale de ${insights?.optimalDuration?.label}, quel type de vidéo exacte faire demain (Titre + Concept).</li>
+    <li><strong>La Vidéo à Faire Demain :</strong> (Titre précis + Concept) basé sur ce qui marche le mieux actuellement.</li>
     <li><strong>L'Objectif Chiffré :</strong> Viser X vues/video basé sur la tendance actuelle.</li>
   </ul>
 
@@ -124,7 +132,7 @@ Ton ton doit être : Expert, Datavore, Actionnable. Utilise des mots forts.`;
             body: JSON.stringify({
                 model: "mistral-small-latest",
                 messages: [{ role: "user", content: prompt }],
-                temperature: 0.5, // Plus bas pour être plus analytique et moins "créatif/random"
+                temperature: 0.5,
                 max_tokens: 2500,
             }),
         });

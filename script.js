@@ -3960,7 +3960,8 @@ function initYoutubeAnalysis() {
           channelName: channel.title,
           insights,
           topShorts: topShorts.slice(0, 3),
-          topLongVideos: topLongVideos.slice(0, 3)
+          topLongVideos: topLongVideos.slice(0, 3),
+          recentVideos: data.recentVideos ? data.recentVideos.slice(0, 10) : []
         }),
       });
 

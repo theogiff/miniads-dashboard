@@ -263,6 +263,13 @@ export default async function handler(req, res) {
                 longVideos: longStats,
                 totalVideosAnalyzed: allVideos.length,
             },
+            recentVideos: allVideos.slice(0, 15).map(v => ({
+                title: v.title,
+                views: v.views,
+                engagementRate: v.engagementRate,
+                durationFormatted: v.durationFormatted,
+                isShort: v.isShort
+            })),
             topShorts,
             topLongVideos,
             monthlyPerformance,
