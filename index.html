@@ -30,10 +30,6 @@
             <span class="client-nav-label">Mes miniatures</span>
             <span class="client-nav-pill">Actif</span>
           </button>
-          <button type="button" class="client-nav-link" data-client-view="youtube-analytics">
-            <span class="client-nav-label">Analyse YouTube</span>
-            <span class="client-nav-pill">IA</span>
-          </button>
           <button type="button" class="client-nav-link" data-client-view="extension-miniads">
             <span class="client-nav-label">Extension Miniads</span>
             <span class="client-nav-pill">Nouveau</span>
@@ -127,108 +123,6 @@
               <div id="miniaturesFolderList" class="miniatures-folder-list"></div>
             </div>
           </div>
-        </section>
-
-        <section class="client-view youtube-analytics-view" id="clientYoutubeView" data-client-view="youtube-analytics" aria-labelledby="youtubeTitle">
-          <div class="youtube-hero card">
-            <div class="youtube-hero-header">
-              <div>
-                <span class="youtube-pill">Analyse YouTube</span>
-                <h2 id="youtubeTitle">Analyse YouTube</h2>
-                <p class="youtube-subtitle">Colle l’URL de ta chaîne pour générer un hub complet de statistiques et d’insights.</p>
-              </div>
-            </div>
-            <form id="youtubeAnalysisForm" class="youtube-form">
-              <label class="youtube-label" for="youtubeChannelUrl">URL de la chaîne</label>
-              <div class="youtube-input-row">
-                <input id="youtubeChannelUrl" type="url" placeholder="https://www.youtube.com/@votrechaine" required />
-                <button type="submit" class="mini-card-btn mini-card-btn-primary youtube-submit" id="youtubeSubmitBtn">Analyser</button>
-              </div>
-              <p class="youtube-help">Formats supportés : URL de chaîne, handle (@), URL vidéo.</p>
-              <p class="youtube-status" id="youtubeStatus">Aucune chaîne analysée pour l’instant.</p>
-            </form>
-            <div class="youtube-channel-card hidden" id="youtubeChannelCard">
-              <img src="" alt="" class="youtube-channel-avatar" id="youtubeChannelAvatar" />
-              <div class="youtube-channel-info">
-                <span class="youtube-channel-label">Chaîne analysée</span>
-                <h3 class="youtube-channel-name" id="youtubeChannelName">—</h3>
-                <p class="youtube-channel-description" id="youtubeChannelDescription">—</p>
-                <div class="youtube-channel-meta">
-                  <span id="youtubeChannelMeta">—</span>
-                  <a id="youtubeChannelLink" href="#" target="_blank" rel="noopener">Ouvrir la chaîne</a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="youtube-kpi-grid">
-            <article class="youtube-kpi">
-              <div>
-                <div class="youtube-kpi-label">Abonnés</div>
-                <div class="youtube-kpi-value" id="youtubeKpiSubscribers">—</div>
-              </div>
-              <div class="youtube-kpi-icon" aria-hidden="true">SUB</div>
-            </article>
-            <article class="youtube-kpi">
-              <div>
-                <div class="youtube-kpi-label">Vues totales</div>
-                <div class="youtube-kpi-value" id="youtubeKpiViews">—</div>
-              </div>
-              <div class="youtube-kpi-icon" aria-hidden="true">VUE</div>
-            </article>
-            <article class="youtube-kpi">
-              <div>
-                <div class="youtube-kpi-label">Vidéos</div>
-                <div class="youtube-kpi-value" id="youtubeKpiVideos">—</div>
-              </div>
-              <div class="youtube-kpi-icon" aria-hidden="true">VID</div>
-            </article>
-            <article class="youtube-kpi">
-              <div>
-                <div class="youtube-kpi-label">Vues moyennes</div>
-                <div class="youtube-kpi-value" id="youtubeKpiAvgViews">—</div>
-              </div>
-              <div class="youtube-kpi-icon" aria-hidden="true">AVG</div>
-            </article>
-          </div>
-
-          <div class="youtube-panels">
-            <article class="card youtube-chart-card">
-              <div class="youtube-card-head">
-                <div>
-                  <h3>Top vidéos par vues</h3>
-                  <p class="youtube-card-subtitle">Basé sur les 6 meilleures performances récentes.</p>
-                </div>
-              </div>
-              <div class="youtube-chart-wrap">
-                <canvas id="youtubeViewsChart" height="220"></canvas>
-              </div>
-            </article>
-            <article class="card youtube-insights-card">
-              <div class="youtube-card-head">
-                <div>
-                  <h3>Insights IA</h3>
-                  <p class="youtube-card-subtitle">Recommandations personnalisées via MistralAI.</p>
-                </div>
-              </div>
-              <p class="youtube-insights-status" id="youtubeInsightsStatus">Lance une analyse pour générer des recommandations.</p>
-              <div class="youtube-insights-list" id="youtubeInsightsList">
-                <div class="youtube-empty">Aucune recommandation pour le moment.</div>
-              </div>
-            </article>
-          </div>
-
-          <article class="card youtube-top-card">
-            <div class="youtube-card-head">
-              <div>
-                <h3>Top vidéos</h3>
-                <p class="youtube-card-subtitle">Les contenus qui performent le mieux sur la chaîne.</p>
-              </div>
-            </div>
-            <div class="youtube-video-list" id="youtubeTopVideos">
-              <div class="youtube-empty">Aucune donnée disponible.</div>
-            </div>
-          </article>
         </section>
 
         <section class="client-view extension-view" id="clientExtensionView" data-client-view="extension-miniads" aria-labelledby="extensionTitle">
