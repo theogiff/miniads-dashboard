@@ -3964,6 +3964,24 @@ function initYoutubeAnalysis() {
 
       aiContentDiv.innerHTML = aiData.analysis;
 
+      // Store context for chat
+      window.ytChannelContext = {
+        title: channel.title,
+        subscriberCount: channel.subscriberCount,
+        viewCount: channel.viewCount,
+        videoCount: channel.videoCount,
+        shortsCount: analytics.shorts.count,
+        shortsEngagement: analytics.shorts.avgEngagement,
+        longCount: analytics.longVideos.count,
+        longEngagement: analytics.longVideos.avgEngagement,
+        optimalDuration: insights.optimalDuration?.label,
+        bestPostingTime: insights.bestPostingTime?.hourFormatted,
+        trend: insights.trend?.direction === 'up' ? `+${insights.trend.percentage}%` : `${insights.trend.percentage}%`
+      };
+
+      // Init chat
+      initAiChat();
+
     } catch (err) {
       console.error(err);
       errorMsg.textContent = err.message;
@@ -3975,6 +3993,52 @@ function initYoutubeAnalysis() {
   });
 }
 
+function initAiChat() {
+  const chatForm = document.getElementById("aiChatForm");
+  const chatInput = document.getElementById("chatInput");
+  const chatMessages = document.getElementById("chatMessages");
+  const chatSubmitBtn = document.getElementById("chatSubmitBtn");
+
+  if (!chatForm) return;
+
+  chatForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const question = chatInput.value.trim();
+    if (!question) return;
+
+    // Add user message
+    chatMessages.innerHTML += `<div class="yt-chat-message user"><strong>Vous:</strong> ${question}</div>`;
+    chatInput.value = "";
+    chatSubmitBtn.disabled = true;
+    chatSubmitBtn.textContent = "...";
+
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    try {
+      const res = await fetch("/api/mistral/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          channelContext: window.ytChannelContext || null
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      chatMessages.innerHTML += `<div class="yt-chat-message ai">${data.answer}</div>`;
+    } catch (err) {
+      chatMessages.innerHTML += `<div class="yt-chat-message ai" style="color: #ef4444;">Erreur: ${err.message}</div>`;
+    } finally {
+      chatSubmitBtn.disabled = false;
+      chatSubmitBtn.textContent = "Envoyer";
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  });
+}
+
 function renderVideoCard(video) {
   return `
     <div class="yt-video-item">
@@ -3982,10 +4046,10 @@ function renderVideoCard(video) {
       <div class="yt-video-info">
         <div class="yt-video-title">${video.title}</div>
         <div class="yt-video-stats">
-          <span>👁️ ${formatCount(video.views)}</span>
-          <span>❤️ ${formatCount(video.likes)}</span>
-          <span>⏱️ ${video.durationFormatted}</span>
-          <span class="yt-video-engagement">📈 ${video.engagementRate}%</span>
+          <span>${formatCount(video.views)} vues</span>
+          <span>${formatCount(video.likes)} likes</span>
+          <span>${video.durationFormatted}</span>
+          <span class="yt-video-engagement">${video.engagementRate}% engagement</span>
         </div>
       </div>
     </div>
@@ -3996,7 +4060,6 @@ function renderMonthlyChart(monthlyData) {
   const ctx = document.getElementById("ytPerformanceChart");
   if (!ctx) return;
 
-  // Destroy previous chart if exists
   if (ytPerformanceChart) {
     ytPerformanceChart.destroy();
   }
@@ -4006,29 +4069,36 @@ function renderMonthlyChart(monthlyData) {
   const engagementData = monthlyData.map(m => m.avgEngagement);
 
   ytPerformanceChart = new Chart(ctx, {
-    type: "bar",
+    type: "line",
     data: {
       labels,
       datasets: [
         {
           label: "Vues totales",
           data: viewsData,
-          backgroundColor: "rgba(239, 68, 68, 0.7)",
-          borderColor: "#ef4444",
-          borderWidth: 1,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#3b82f6",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
           yAxisID: "y",
-          order: 2,
         },
         {
-          label: "Engagement moyen %",
+          label: "Engagement moyen",
           data: engagementData,
-          type: "line",
           borderColor: "#f59a2d",
           backgroundColor: "transparent",
-          borderWidth: 3,
-          tension: 0.4,
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#f59a2d",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
           yAxisID: "y1",
-          order: 1,
         },
       ],
     },
@@ -4041,7 +4111,16 @@ function renderMonthlyChart(monthlyData) {
       },
       plugins: {
         legend: {
-          display: false,
+          display: true,
+          position: "top",
+          align: "end",
+          labels: {
+            boxWidth: 12,
+            boxHeight: 12,
+            padding: 16,
+            font: { size: 12 },
+            color: "#64748b",
+          },
         },
         tooltip: {
           backgroundColor: "#fff",
@@ -4049,15 +4128,27 @@ function renderMonthlyChart(monthlyData) {
           bodyColor: "#666",
           borderColor: "#e5e7eb",
           borderWidth: 1,
+          padding: 12,
+          cornerRadius: 8,
+          displayColors: true,
+          callbacks: {
+            label: function (context) {
+              if (context.datasetIndex === 0) {
+                return ` Vues: ${formatCount(context.raw)}`;
+              }
+              return ` Engagement: ${context.raw}%`;
+            }
+          }
         },
       },
       scales: {
         x: {
           grid: {
-            color: "rgba(0, 0, 0, 0.05)",
+            display: false,
           },
           ticks: {
-            color: "#64748b",
+            color: "#94a3b8",
+            font: { size: 11 },
           },
         },
         y: {
@@ -4065,13 +4156,20 @@ function renderMonthlyChart(monthlyData) {
           display: true,
           position: "left",
           grid: {
-            color: "rgba(0, 0, 0, 0.05)",
+            color: "rgba(0, 0, 0, 0.04)",
           },
           ticks: {
-            color: "#ef4444",
+            color: "#3b82f6",
+            font: { size: 11 },
             callback: function (value) {
               return formatCount(value);
             },
+          },
+          title: {
+            display: true,
+            text: "Vues",
+            color: "#3b82f6",
+            font: { size: 11, weight: 500 },
           },
         },
         y1: {
@@ -4083,9 +4181,16 @@ function renderMonthlyChart(monthlyData) {
           },
           ticks: {
             color: "#f59a2d",
+            font: { size: 11 },
             callback: function (value) {
               return value + "%";
             },
+          },
+          title: {
+            display: true,
+            text: "Engagement",
+            color: "#f59a2d",
+            font: { size: 11, weight: 500 },
           },
         },
       },

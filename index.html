@@ -279,11 +279,11 @@
 
             <!-- Format Comparison -->
             <div class="yt-format-comparison yt-dark-card">
-              <h3>📊 Comparaison des formats</h3>
+              <h3>Comparaison des formats</h3>
               <div class="yt-format-grid">
                 <div class="yt-format-card yt-format-shorts">
-                  <div class="yt-format-icon">⚡</div>
                   <h4>Shorts</h4>
+                  <p class="yt-format-desc">Vidéos courtes (≤60s)</p>
                   <div class="yt-format-stats">
                     <div class="yt-format-stat">
                       <span class="yt-format-value" id="shortsCount">0</span>
@@ -300,8 +300,8 @@
                   </div>
                 </div>
                 <div class="yt-format-card yt-format-long">
-                  <div class="yt-format-icon">🎬</div>
                   <h4>Vidéos longues</h4>
+                  <p class="yt-format-desc">Contenu standard (&gt;60s)</p>
                   <div class="yt-format-stats">
                     <div class="yt-format-stat">
                       <span class="yt-format-value" id="longCount">0</span>
@@ -323,25 +323,21 @@
             <!-- Insights Cards -->
             <div class="yt-insights-grid">
               <div class="yt-insight-card yt-dark-card">
-                <div class="yt-insight-icon">⏱️</div>
                 <h4>Durée optimale</h4>
                 <div class="yt-insight-value" id="insightDuration">-</div>
                 <p class="yt-insight-desc" id="insightDurationDesc">-</p>
               </div>
               <div class="yt-insight-card yt-dark-card">
-                <div class="yt-insight-icon">🕐</div>
                 <h4>Meilleur horaire</h4>
                 <div class="yt-insight-value" id="insightTime">-</div>
                 <p class="yt-insight-desc" id="insightTimeDesc">-</p>
               </div>
               <div class="yt-insight-card yt-dark-card">
-                <div class="yt-insight-icon">📅</div>
                 <h4>Meilleur jour</h4>
                 <div class="yt-insight-value" id="insightDay">-</div>
                 <p class="yt-insight-desc" id="insightDayDesc">-</p>
               </div>
-              <div class="yt-insight-card yt-dark-card">
-                <div class="yt-insight-icon" id="trendIcon">📈</div>
+              <div class="yt-insight-card yt-dark-card" id="trendCard">
                 <h4>Tendance</h4>
                 <div class="yt-insight-value" id="insightTrend">-</div>
                 <p class="yt-insight-desc" id="insightTrendDesc">-</p>
@@ -368,8 +364,8 @@
             <!-- Top Videos Tabs -->
             <div class="yt-top-videos yt-dark-card">
               <div class="yt-top-tabs">
-                <button class="yt-tab-btn active" data-tab="shorts">⚡ Top Shorts</button>
-                <button class="yt-tab-btn" data-tab="long">🎬 Top Vidéos longues</button>
+                <button class="yt-tab-btn active" data-tab="shorts">Top Shorts</button>
+                <button class="yt-tab-btn" data-tab="long">Top Vidéos longues</button>
               </div>
               <div class="yt-tab-content" id="tabShorts">
                 <div class="yt-videos-list" id="topShortsList">
@@ -383,11 +379,10 @@
               </div>
             </div>
 
-            <!-- AI Analysis -->
             <div class="ai-analysis-section card yt-dark-card">
               <div class="ai-header">
-                <div class="ai-icon-pulse">✨</div>
-                <h3>Analyse approfondie Mistral AI</h3>
+                <span class="ai-badge">Mistral AI</span>
+                <h3>Analyse approfondie</h3>
               </div>
               <div id="aiContent" class="ai-content">
                 <div class="ai-loading">
@@ -395,6 +390,22 @@
                   <p>Analyse approfondie en cours...</p>
                 </div>
               </div>
+            </div>
+
+            <!-- AI Chat -->
+            <div class="yt-ai-chat yt-dark-card" id="aiChatSection">
+              <div class="yt-chat-header">
+                <h3>Posez une question</h3>
+                <p class="yt-chat-subtitle">Demandez des conseils personnalisés sur votre chaîne</p>
+              </div>
+              <div class="yt-chat-messages" id="chatMessages">
+                <!-- Messages will appear here -->
+              </div>
+              <form class="yt-chat-form" id="aiChatForm">
+                <input type="text" id="chatInput" placeholder="Ex: Comment améliorer mon taux d'engagement ?"
+                  required />
+                <button type="submit" class="btn btn-primary" id="chatSubmitBtn">Envoyer</button>
+              </form>
             </div>
           </div>
         </section>
