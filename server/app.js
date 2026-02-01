@@ -7,6 +7,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the parent directory (frontend)
+import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendPath = path.join(__dirname, "..");
+app.use(express.static(frontendPath));
+
 const DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder";
 
 // --- Auth Google Drive ---
