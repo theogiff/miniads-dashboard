@@ -3804,6 +3804,16 @@ if (isAdminRoute) {
 
 // --- YouTube & Mistral AI Logic ---
 
+let ytPerformanceChart = null;
+
+function formatCount(num) {
+  if (!num) return "0";
+  const n = parseInt(num, 10);
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+  return n.toString();
+}
+
 function initYoutubeAnalysis() {
   const form = document.getElementById("youtubeAnalyzeForm");
   const input = document.getElementById("youtubeUrlInput");
@@ -3834,19 +3844,45 @@ function initYoutubeAnalysis() {
         body: JSON.stringify({ url }),
       });
 
-      const statsData = await statsRes.json();
-      if (!statsRes.ok) throw new Error(statsData.error || "Erreur lors de l'analyse YouTube");
+      const data = await statsRes.json();
+      if (!statsRes.ok) throw new Error(data.error || "Erreur lors de l'analyse YouTube");
 
-      // Update UI with Stats
-      document.getElementById("channelAvatar").src = statsData.thumbnail;
-      document.getElementById("channelTitle").textContent = statsData.title;
-      document.getElementById("channelCustomUrl").textContent = statsData.customUrl ? `@${statsData.customUrl}` : "";
-      document.getElementById("channelSubscribers").textContent = `${formatCount(statsData.subscriberCount)} abonnés`;
-      document.getElementById("channelDescription").textContent = statsData.description || "Aucune description.";
+      const { channel, analytics, recentVideos, topByEngagement } = data;
 
-      document.getElementById("statsSubs").textContent = formatCount(statsData.subscriberCount);
-      document.getElementById("statsViews").textContent = formatCount(statsData.viewCount);
-      document.getElementById("statsVideos").textContent = statsData.videoCount;
+      // Update Channel Header
+      document.getElementById("channelAvatar").src = channel.thumbnail;
+      document.getElementById("channelTitle").textContent = channel.title;
+      document.getElementById("channelCustomUrl").textContent = channel.customUrl ? `@${channel.customUrl}` : "";
+      document.getElementById("channelSubscribers").textContent = `${formatCount(channel.subscriberCount)} abonnés`;
+      document.getElementById("channelDescription").textContent = channel.description?.slice(0, 150) || "Aucune description.";
+
+      // Update KPIs
+      document.getElementById("statsSubs").textContent = formatCount(channel.subscriberCount);
+      document.getElementById("statsViews").textContent = formatCount(channel.viewCount);
+      document.getElementById("statsVideos").textContent = channel.videoCount;
+      document.getElementById("statsAvgViews").textContent = formatCount(analytics.avgViews);
+
+      // Update Engagement Badge
+      document.getElementById("avgEngagementBadge").textContent = analytics.avgEngagement + "%";
+
+      // Render Top Videos
+      const topVideosList = document.getElementById("topVideosList");
+      topVideosList.innerHTML = topByEngagement.map(video => `
+        <div class="yt-video-item">
+          <img src="${video.thumbnail}" alt="${video.title}" class="yt-video-thumb" />
+          <div class="yt-video-info">
+            <div class="yt-video-title">${video.title}</div>
+            <div class="yt-video-stats">
+              <span>👁️ ${formatCount(video.views)}</span>
+              <span>❤️ ${formatCount(video.likes)}</span>
+              <span class="yt-video-engagement">📈 ${video.engagementRate}%</span>
+            </div>
+          </div>
+        </div>
+      `).join("");
+
+      // Render Chart
+      renderPerformanceChart(recentVideos.reverse());
 
       resultsDiv.classList.remove("hidden");
 
@@ -3862,13 +3898,16 @@ function initYoutubeAnalysis() {
       const aiRes = await fetch("/api/mistral/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stats: statsData, channelName: statsData.title }),
+        body: JSON.stringify({
+          stats: { ...channel, avgEngagement: analytics.avgEngagement, avgViews: analytics.avgViews },
+          channelName: channel.title,
+          topVideos: topByEngagement.slice(0, 3).map(v => v.title)
+        }),
       });
 
       const aiData = await aiRes.json();
       if (!aiRes.ok) throw new Error(aiData.error || "Erreur lors de l'analyse IA");
 
-      // Update AI Content
       aiContentDiv.innerHTML = aiData.analysis;
 
     } catch (err) {
@@ -3879,6 +3918,105 @@ function initYoutubeAnalysis() {
       analyzeBtn.disabled = false;
       analyzeBtn.innerHTML = originalBtnContent || `<span>Analyser</span>`;
     }
+  });
+}
+
+function renderPerformanceChart(videos) {
+  const ctx = document.getElementById("ytPerformanceChart");
+  if (!ctx) return;
+
+  // Destroy previous chart if exists
+  if (ytPerformanceChart) {
+    ytPerformanceChart.destroy();
+  }
+
+  const labels = videos.map((_, i) => `V${i + 1}`);
+  const viewsData = videos.map(v => v.views);
+  const engagementData = videos.map(v => v.engagementRate);
+
+  ytPerformanceChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Vues",
+          data: viewsData,
+          borderColor: "#ef4444",
+          backgroundColor: "rgba(239, 68, 68, 0.1)",
+          fill: true,
+          tension: 0.4,
+          yAxisID: "y",
+        },
+        {
+          label: "Engagement %",
+          data: engagementData,
+          borderColor: "#f59a2d",
+          backgroundColor: "rgba(245, 154, 45, 0.05)",
+          fill: false,
+          tension: 0.4,
+          yAxisID: "y1",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          backgroundColor: "#1a1d2e",
+          titleColor: "#fff",
+          bodyColor: "#94a3b8",
+          borderColor: "rgba(255,255,255,0.1)",
+          borderWidth: 1,
+        },
+      },
+      scales: {
+        x: {
+          grid: {
+            color: "rgba(255, 255, 255, 0.05)",
+          },
+          ticks: {
+            color: "#64748b",
+          },
+        },
+        y: {
+          type: "linear",
+          display: true,
+          position: "left",
+          grid: {
+            color: "rgba(255, 255, 255, 0.05)",
+          },
+          ticks: {
+            color: "#ef4444",
+            callback: function (value) {
+              return formatCount(value);
+            },
+          },
+        },
+        y1: {
+          type: "linear",
+          display: true,
+          position: "right",
+          grid: {
+            drawOnChartArea: false,
+          },
+          ticks: {
+            color: "#f59a2d",
+            callback: function (value) {
+              return value + "%";
+            },
+          },
+        },
+      },
+    },
   });
 }
 

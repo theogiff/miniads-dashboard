@@ -10,6 +10,7 @@
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -227,7 +228,7 @@
 
           <div id="youtubeResults" class="youtube-results hidden">
             <!-- Channel Header -->
-            <div class="channel-header card">
+            <div class="channel-header card yt-dark-card">
               <img id="channelAvatar" src="" alt="Avatar" class="channel-avatar">
               <div class="channel-info">
                 <h3 id="channelTitle">Nom de la chaîne</h3>
@@ -240,27 +241,78 @@
               </div>
             </div>
 
-            <!-- KPI Grid -->
-            <div class="youtube-kpi-grid">
-              <article class="kpi-card">
-                <div class="kpi-icon">👥</div>
-                <div class="kpi-value" id="statsSubs">-</div>
-                <div class="kpi-label">Abonnés</div>
+            <!-- KPI Grid Dark Theme -->
+            <div class="yt-kpi-grid">
+              <article class="yt-kpi-card">
+                <div class="yt-kpi-header">
+                  <span class="yt-kpi-label">Abonnés</span>
+                  <span class="yt-kpi-icon yt-kpi-icon-red">👥</span>
+                </div>
+                <div class="yt-kpi-value" id="statsSubs">-</div>
+                <div class="yt-kpi-trend yt-trend-up" id="statSubsTrend">-</div>
               </article>
-              <article class="kpi-card">
-                <div class="kpi-icon">👁️</div>
-                <div class="kpi-value" id="statsViews">-</div>
-                <div class="kpi-label">Vues totales</div>
+              <article class="yt-kpi-card">
+                <div class="yt-kpi-header">
+                  <span class="yt-kpi-label">Vues totales</span>
+                  <span class="yt-kpi-icon yt-kpi-icon-green">👁️</span>
+                </div>
+                <div class="yt-kpi-value" id="statsViews">-</div>
+                <div class="yt-kpi-trend yt-trend-up" id="statsViewsTrend">-</div>
               </article>
-              <article class="kpi-card">
-                <div class="kpi-icon">📹</div>
-                <div class="kpi-value" id="statsVideos">-</div>
-                <div class="kpi-label">Vidéos publiées</div>
+              <article class="yt-kpi-card">
+                <div class="yt-kpi-header">
+                  <span class="yt-kpi-label">Vidéos</span>
+                  <span class="yt-kpi-icon yt-kpi-icon-teal">📹</span>
+                </div>
+                <div class="yt-kpi-value" id="statsVideos">-</div>
+                <div class="yt-kpi-trend" id="statsVideosTrend">-</div>
+              </article>
+              <article class="yt-kpi-card">
+                <div class="yt-kpi-header">
+                  <span class="yt-kpi-label">Vues moyennes</span>
+                  <span class="yt-kpi-icon yt-kpi-icon-blue">📈</span>
+                </div>
+                <div class="yt-kpi-value" id="statsAvgViews">-</div>
+                <div class="yt-kpi-trend yt-trend-up" id="statsAvgViewsTrend">-</div>
               </article>
             </div>
 
+            <!-- Engagement Rate Card -->
+            <div class="yt-engagement-card yt-dark-card">
+              <div class="yt-engagement-header">
+                <h3>Taux d'engagement moyen</h3>
+                <span class="yt-engagement-badge" id="avgEngagementBadge">-</span>
+              </div>
+              <p class="yt-engagement-desc">Basé sur les 20 dernières vidéos (likes + commentaires / vues)</p>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="yt-chart-card yt-dark-card">
+              <div class="yt-chart-header">
+                <div>
+                  <h3>Performance des vidéos</h3>
+                  <p class="yt-chart-subtitle">20 dernières vidéos</p>
+                </div>
+                <div class="yt-chart-legend">
+                  <span class="yt-legend-item yt-legend-views">● Vues</span>
+                  <span class="yt-legend-item yt-legend-engagement">● Engagement</span>
+                </div>
+              </div>
+              <div class="yt-chart-container">
+                <canvas id="ytPerformanceChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Top Videos -->
+            <div class="yt-top-videos yt-dark-card">
+              <h3>🔥 Top Vidéos par Engagement</h3>
+              <div class="yt-videos-list" id="topVideosList">
+                <!-- Dynamically filled -->
+              </div>
+            </div>
+
             <!-- AI Analysis -->
-            <div class="ai-analysis-section card">
+            <div class="ai-analysis-section card yt-dark-card">
               <div class="ai-header">
                 <div class="ai-icon-pulse">✨</div>
                 <h3>Analyse Mistral AI</h3>
