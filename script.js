@@ -3823,6 +3823,18 @@ function initYoutubeAnalysis() {
 
   if (!form) return;
 
+  // Setup tab switching
+  document.querySelectorAll(".yt-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".yt-tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const tab = btn.dataset.tab;
+      document.getElementById("tabShorts").classList.toggle("hidden", tab !== "shorts");
+      document.getElementById("tabLong").classList.toggle("hidden", tab !== "long");
+    });
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const url = input.value.trim();
@@ -3847,7 +3859,7 @@ function initYoutubeAnalysis() {
       const data = await statsRes.json();
       if (!statsRes.ok) throw new Error(data.error || "Erreur lors de l'analyse YouTube");
 
-      const { channel, analytics, recentVideos, topByEngagement } = data;
+      const { channel, analytics, topShorts, topLongVideos, monthlyPerformance, insights } = data;
 
       // Update Channel Header
       document.getElementById("channelAvatar").src = channel.thumbnail;
@@ -3860,29 +3872,61 @@ function initYoutubeAnalysis() {
       document.getElementById("statsSubs").textContent = formatCount(channel.subscriberCount);
       document.getElementById("statsViews").textContent = formatCount(channel.viewCount);
       document.getElementById("statsVideos").textContent = channel.videoCount;
-      document.getElementById("statsAvgViews").textContent = formatCount(analytics.avgViews);
+      document.getElementById("statsAvgEngagement").textContent = analytics.global.avgEngagement + "%";
 
-      // Update Engagement Badge
-      document.getElementById("avgEngagementBadge").textContent = analytics.avgEngagement + "%";
+      // Trend indicator
+      const trendEl = document.getElementById("statsTrendDirection");
+      if (insights.trend.direction === "up") {
+        trendEl.textContent = `↑ +${insights.trend.percentage}%`;
+        trendEl.className = "yt-kpi-trend yt-trend-up";
+      } else {
+        trendEl.textContent = `↓ ${insights.trend.percentage}%`;
+        trendEl.className = "yt-kpi-trend yt-trend-down";
+      }
 
-      // Render Top Videos
-      const topVideosList = document.getElementById("topVideosList");
-      topVideosList.innerHTML = topByEngagement.map(video => `
-        <div class="yt-video-item">
-          <img src="${video.thumbnail}" alt="${video.title}" class="yt-video-thumb" />
-          <div class="yt-video-info">
-            <div class="yt-video-title">${video.title}</div>
-            <div class="yt-video-stats">
-              <span>👁️ ${formatCount(video.views)}</span>
-              <span>❤️ ${formatCount(video.likes)}</span>
-              <span class="yt-video-engagement">📈 ${video.engagementRate}%</span>
-            </div>
-          </div>
-        </div>
-      `).join("");
+      // Format Comparison
+      document.getElementById("shortsCount").textContent = analytics.shorts.count;
+      document.getElementById("shortsEngagement").textContent = analytics.shorts.avgEngagement + "%";
+      document.getElementById("shortsAvgViews").textContent = formatCount(analytics.shorts.avgViews);
 
-      // Render Chart
-      renderPerformanceChart(recentVideos.reverse());
+      document.getElementById("longCount").textContent = analytics.longVideos.count;
+      document.getElementById("longEngagement").textContent = analytics.longVideos.avgEngagement + "%";
+      document.getElementById("longAvgViews").textContent = formatCount(analytics.longVideos.avgViews);
+
+      // Insights Cards
+      if (insights.optimalDuration) {
+        document.getElementById("insightDuration").textContent = insights.optimalDuration.label;
+        document.getElementById("insightDurationDesc").textContent = `${insights.optimalDuration.avgEngagement}% engagement`;
+      }
+
+      if (insights.bestPostingTime) {
+        document.getElementById("insightTime").textContent = insights.bestPostingTime.hourFormatted;
+        document.getElementById("insightTimeDesc").textContent = `${insights.bestPostingTime.avgEngagement}% engagement`;
+      }
+
+      if (insights.bestPostingDay) {
+        document.getElementById("insightDay").textContent = insights.bestPostingDay.day;
+        document.getElementById("insightDayDesc").textContent = `${insights.bestPostingDay.avgEngagement}% engagement`;
+      }
+
+      document.getElementById("trendIcon").textContent = insights.trend.direction === "up" ? "📈" : "📉";
+      document.getElementById("insightTrend").textContent = insights.trend.direction === "up" ? "En hausse" : "En baisse";
+      document.getElementById("insightTrendDesc").textContent = `${insights.trend.percentage > 0 ? "+" : ""}${insights.trend.percentage}% vs avant`;
+
+      // Render Top Shorts
+      const topShortsList = document.getElementById("topShortsList");
+      topShortsList.innerHTML = topShorts.length > 0
+        ? topShorts.map(video => renderVideoCard(video)).join("")
+        : '<p class="yt-no-data">Aucun Short trouvé</p>';
+
+      // Render Top Long Videos
+      const topLongList = document.getElementById("topLongList");
+      topLongList.innerHTML = topLongVideos.length > 0
+        ? topLongVideos.map(video => renderVideoCard(video)).join("")
+        : '<p class="yt-no-data">Aucune vidéo longue trouvée</p>';
+
+      // Render Monthly Chart
+      renderMonthlyChart(monthlyPerformance);
 
       resultsDiv.classList.remove("hidden");
 
@@ -3891,7 +3935,7 @@ function initYoutubeAnalysis() {
       aiContentDiv.innerHTML = `
         <div class="ai-loading">
             <div class="spinner"></div>
-            <p>Analyse de la chaîne en cours par l'IA...</p>
+            <p>Analyse approfondie en cours...</p>
         </div>
       `;
 
@@ -3899,9 +3943,19 @@ function initYoutubeAnalysis() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          stats: { ...channel, avgEngagement: analytics.avgEngagement, avgViews: analytics.avgViews },
+          stats: {
+            ...channel,
+            shortsCount: analytics.shorts.count,
+            shortsEngagement: analytics.shorts.avgEngagement,
+            shortsAvgViews: analytics.shorts.avgViews,
+            longCount: analytics.longVideos.count,
+            longEngagement: analytics.longVideos.avgEngagement,
+            longAvgViews: analytics.longVideos.avgViews,
+          },
           channelName: channel.title,
-          topVideos: topByEngagement.slice(0, 3).map(v => v.title)
+          insights,
+          topShorts: topShorts.slice(0, 3),
+          topLongVideos: topLongVideos.slice(0, 3)
         }),
       });
 
@@ -3921,7 +3975,24 @@ function initYoutubeAnalysis() {
   });
 }
 
-function renderPerformanceChart(videos) {
+function renderVideoCard(video) {
+  return `
+    <div class="yt-video-item">
+      <img src="${video.thumbnail}" alt="${video.title}" class="yt-video-thumb" />
+      <div class="yt-video-info">
+        <div class="yt-video-title">${video.title}</div>
+        <div class="yt-video-stats">
+          <span>👁️ ${formatCount(video.views)}</span>
+          <span>❤️ ${formatCount(video.likes)}</span>
+          <span>⏱️ ${video.durationFormatted}</span>
+          <span class="yt-video-engagement">📈 ${video.engagementRate}%</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderMonthlyChart(monthlyData) {
   const ctx = document.getElementById("ytPerformanceChart");
   if (!ctx) return;
 
@@ -3930,32 +4001,34 @@ function renderPerformanceChart(videos) {
     ytPerformanceChart.destroy();
   }
 
-  const labels = videos.map((_, i) => `V${i + 1}`);
-  const viewsData = videos.map(v => v.views);
-  const engagementData = videos.map(v => v.engagementRate);
+  const labels = monthlyData.map(m => m.month);
+  const viewsData = monthlyData.map(m => m.totalViews);
+  const engagementData = monthlyData.map(m => m.avgEngagement);
 
   ytPerformanceChart = new Chart(ctx, {
-    type: "line",
+    type: "bar",
     data: {
       labels,
       datasets: [
         {
-          label: "Vues",
+          label: "Vues totales",
           data: viewsData,
+          backgroundColor: "rgba(239, 68, 68, 0.7)",
           borderColor: "#ef4444",
-          backgroundColor: "rgba(239, 68, 68, 0.1)",
-          fill: true,
-          tension: 0.4,
+          borderWidth: 1,
           yAxisID: "y",
+          order: 2,
         },
         {
-          label: "Engagement %",
+          label: "Engagement moyen %",
           data: engagementData,
+          type: "line",
           borderColor: "#f59a2d",
-          backgroundColor: "rgba(245, 154, 45, 0.05)",
-          fill: false,
+          backgroundColor: "transparent",
+          borderWidth: 3,
           tension: 0.4,
           yAxisID: "y1",
+          order: 1,
         },
       ],
     },
@@ -3971,17 +4044,17 @@ function renderPerformanceChart(videos) {
           display: false,
         },
         tooltip: {
-          backgroundColor: "#1a1d2e",
-          titleColor: "#fff",
-          bodyColor: "#94a3b8",
-          borderColor: "rgba(255,255,255,0.1)",
+          backgroundColor: "#fff",
+          titleColor: "#111",
+          bodyColor: "#666",
+          borderColor: "#e5e7eb",
           borderWidth: 1,
         },
       },
       scales: {
         x: {
           grid: {
-            color: "rgba(255, 255, 255, 0.05)",
+            color: "rgba(0, 0, 0, 0.05)",
           },
           ticks: {
             color: "#64748b",
@@ -3992,7 +4065,7 @@ function renderPerformanceChart(videos) {
           display: true,
           position: "left",
           grid: {
-            color: "rgba(255, 255, 255, 0.05)",
+            color: "rgba(0, 0, 0, 0.05)",
           },
           ticks: {
             color: "#ef4444",

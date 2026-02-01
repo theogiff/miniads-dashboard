@@ -8,34 +8,64 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { stats, channelName, topVideos } = req.body;
+        const { stats, channelName, insights, topShorts, topLongVideos } = req.body;
         if (!process.env.MISTRAL_API_KEY) {
             return res.status(500).json({ error: "Clé API Mistral manquante" });
         }
 
-        const topVideosText = topVideos?.length
-            ? `Top vidéos par engagement: ${topVideos.join(", ")}`
-            : "";
+        const topShortsText = topShorts?.length
+            ? `Top Shorts: ${topShorts.map(v => `"${v.title}" (${v.engagementRate}%)`).join(", ")}`
+            : "Pas de Shorts analysés";
+
+        const topLongText = topLongVideos?.length
+            ? `Top Vidéos longues: ${topLongVideos.map(v => `"${v.title}" (${v.engagementRate}%)`).join(", ")}`
+            : "Pas de vidéos longues analysées";
 
         const prompt = `
-Tu es un expert en stratégie YouTube. Analyse les statistiques suivantes pour la chaîne "${channelName || 'Inconnue'}":
+Tu es un expert en stratégie YouTube et créateur de contenu. Analyse en profondeur les statistiques suivantes pour la chaîne "${channelName || 'Inconnue'}":
 
-**Statistiques globales:**
+## STATISTIQUES GLOBALES
 - Abonnés: ${stats.subscriberCount}
 - Vues totales: ${stats.viewCount}
-- Nombre de vidéos: ${stats.videoCount}
-- Vues moyennes par vidéo: ${stats.avgViews || 'N/A'}
-- Taux d'engagement moyen: ${stats.avgEngagement || 'N/A'}%
+- Nombre total de vidéos: ${stats.videoCount}
 
-${topVideosText}
+## PERFORMANCE PAR FORMAT
+- Shorts (≤60s): ${stats.shortsCount || 0} vidéos, engagement moyen: ${stats.shortsEngagement || 'N/A'}%, vues moyennes: ${stats.shortsAvgViews || 'N/A'}
+- Vidéos longues: ${stats.longCount || 0} vidéos, engagement moyen: ${stats.longEngagement || 'N/A'}%, vues moyennes: ${stats.longAvgViews || 'N/A'}
 
-**Ta mission:**
-1. Donne une analyse courte de l'état actuel de la chaîne (2-3 phrases).
-2. Identifie les points forts basés sur les statistiques.
-3. Donne 3 conseils percutants et personnalisés pour améliorer la chaîne, en tenant compte du taux d'engagement.
-4. Si possible, suggère un type de format/contenu qui pourrait mieux fonctionner.
+## INSIGHTS CLÉS
+- Durée optimale identifiée: ${insights?.optimalDuration?.label || 'N/A'} (${insights?.optimalDuration?.avgEngagement || 'N/A'}% engagement)
+- Meilleur horaire de publication: ${insights?.bestPostingTime?.hourFormatted || 'N/A'} (${insights?.bestPostingTime?.avgEngagement || 'N/A'}% engagement)
+- Meilleur jour: ${insights?.bestPostingDay?.day || 'N/A'}
+- Tendance de la chaîne: ${insights?.trend?.direction === 'up' ? '📈 En hausse' : '📉 En baisse'} (${insights?.trend?.percentage > 0 ? '+' : ''}${insights?.trend?.percentage || 0}%)
 
-Format ta réponse en HTML simple (utilise <h4>, <p>, <ul>, <li>, <strong>). Sois bienveillant mais direct.
+## TOP CONTENUS
+${topShortsText}
+${topLongText}
+
+---
+
+## TA MISSION (réponds en HTML):
+
+<h4>📊 Analyse de la chaîne</h4>
+Donne une analyse détaillée de l'état actuel de la chaîne en 3-4 phrases. Quels sont ses points forts ? Ses faiblesses ?
+
+<h4>🎬 Stratégie de format</h4>
+Compare la performance des Shorts vs Vidéos longues. Lequel fonctionne le mieux ? Doit-il se concentrer sur un format particulier ?
+
+<h4>⏱️ Durée optimale</h4>
+Basé sur les données de durée, quelle est la durée idéale de vidéo pour cette chaîne ? Pourquoi ?
+
+<h4>📅 Meilleurs moments pour poster</h4>
+Analyse les horaires et jours qui performent le mieux. Donne des recommandations précises.
+
+<h4>📈 Tendance et prédictions</h4>
+La chaîne est-elle en croissance ou déclin ? Que doit faire le créateur pour inverser ou maintenir la tendance ?
+
+<h4>💡 3 Actions concrètes</h4>
+Donne 3 conseils TRÈS SPÉCIFIQUES et actionnables que le créateur peut appliquer immédiatement.
+
+Format ta réponse en HTML simple (h4, p, ul, li, strong). Sois direct, percutant, et basé sur les données.
 `;
 
         const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -48,6 +78,7 @@ Format ta réponse en HTML simple (utilise <h4>, <p>, <ul>, <li>, <strong>). Soi
                 model: "mistral-small-latest",
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0.7,
+                max_tokens: 2000,
             }),
         });
 

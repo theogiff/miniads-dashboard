@@ -241,7 +241,7 @@
               </div>
             </div>
 
-            <!-- KPI Grid Dark Theme -->
+            <!-- KPI Grid -->
             <div class="yt-kpi-grid">
               <article class="yt-kpi-card">
                 <div class="yt-kpi-header">
@@ -249,7 +249,7 @@
                   <span class="yt-kpi-icon yt-kpi-icon-red">👥</span>
                 </div>
                 <div class="yt-kpi-value" id="statsSubs">-</div>
-                <div class="yt-kpi-trend yt-trend-up" id="statSubsTrend">-</div>
+                <div class="yt-kpi-trend" id="statSubsTrend">-</div>
               </article>
               <article class="yt-kpi-card">
                 <div class="yt-kpi-header">
@@ -257,7 +257,7 @@
                   <span class="yt-kpi-icon yt-kpi-icon-green">👁️</span>
                 </div>
                 <div class="yt-kpi-value" id="statsViews">-</div>
-                <div class="yt-kpi-trend yt-trend-up" id="statsViewsTrend">-</div>
+                <div class="yt-kpi-trend" id="statsViewsTrend">-</div>
               </article>
               <article class="yt-kpi-card">
                 <div class="yt-kpi-header">
@@ -269,29 +269,91 @@
               </article>
               <article class="yt-kpi-card">
                 <div class="yt-kpi-header">
-                  <span class="yt-kpi-label">Vues moyennes</span>
+                  <span class="yt-kpi-label">Engagement global</span>
                   <span class="yt-kpi-icon yt-kpi-icon-blue">📈</span>
                 </div>
-                <div class="yt-kpi-value" id="statsAvgViews">-</div>
-                <div class="yt-kpi-trend yt-trend-up" id="statsAvgViewsTrend">-</div>
+                <div class="yt-kpi-value" id="statsAvgEngagement">-</div>
+                <div class="yt-kpi-trend" id="statsTrendDirection">-</div>
               </article>
             </div>
 
-            <!-- Engagement Rate Card -->
-            <div class="yt-engagement-card yt-dark-card">
-              <div class="yt-engagement-header">
-                <h3>Taux d'engagement moyen</h3>
-                <span class="yt-engagement-badge" id="avgEngagementBadge">-</span>
+            <!-- Format Comparison -->
+            <div class="yt-format-comparison yt-dark-card">
+              <h3>📊 Comparaison des formats</h3>
+              <div class="yt-format-grid">
+                <div class="yt-format-card yt-format-shorts">
+                  <div class="yt-format-icon">⚡</div>
+                  <h4>Shorts</h4>
+                  <div class="yt-format-stats">
+                    <div class="yt-format-stat">
+                      <span class="yt-format-value" id="shortsCount">0</span>
+                      <span class="yt-format-label">vidéos</span>
+                    </div>
+                    <div class="yt-format-stat">
+                      <span class="yt-format-value" id="shortsEngagement">0%</span>
+                      <span class="yt-format-label">engagement</span>
+                    </div>
+                    <div class="yt-format-stat">
+                      <span class="yt-format-value" id="shortsAvgViews">0</span>
+                      <span class="yt-format-label">vues moy.</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="yt-format-card yt-format-long">
+                  <div class="yt-format-icon">🎬</div>
+                  <h4>Vidéos longues</h4>
+                  <div class="yt-format-stats">
+                    <div class="yt-format-stat">
+                      <span class="yt-format-value" id="longCount">0</span>
+                      <span class="yt-format-label">vidéos</span>
+                    </div>
+                    <div class="yt-format-stat">
+                      <span class="yt-format-value" id="longEngagement">0%</span>
+                      <span class="yt-format-label">engagement</span>
+                    </div>
+                    <div class="yt-format-stat">
+                      <span class="yt-format-value" id="longAvgViews">0</span>
+                      <span class="yt-format-label">vues moy.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p class="yt-engagement-desc">Basé sur les 20 dernières vidéos (likes + commentaires / vues)</p>
             </div>
 
-            <!-- Performance Chart -->
+            <!-- Insights Cards -->
+            <div class="yt-insights-grid">
+              <div class="yt-insight-card yt-dark-card">
+                <div class="yt-insight-icon">⏱️</div>
+                <h4>Durée optimale</h4>
+                <div class="yt-insight-value" id="insightDuration">-</div>
+                <p class="yt-insight-desc" id="insightDurationDesc">-</p>
+              </div>
+              <div class="yt-insight-card yt-dark-card">
+                <div class="yt-insight-icon">🕐</div>
+                <h4>Meilleur horaire</h4>
+                <div class="yt-insight-value" id="insightTime">-</div>
+                <p class="yt-insight-desc" id="insightTimeDesc">-</p>
+              </div>
+              <div class="yt-insight-card yt-dark-card">
+                <div class="yt-insight-icon">📅</div>
+                <h4>Meilleur jour</h4>
+                <div class="yt-insight-value" id="insightDay">-</div>
+                <p class="yt-insight-desc" id="insightDayDesc">-</p>
+              </div>
+              <div class="yt-insight-card yt-dark-card">
+                <div class="yt-insight-icon" id="trendIcon">📈</div>
+                <h4>Tendance</h4>
+                <div class="yt-insight-value" id="insightTrend">-</div>
+                <p class="yt-insight-desc" id="insightTrendDesc">-</p>
+              </div>
+            </div>
+
+            <!-- Monthly Performance Chart -->
             <div class="yt-chart-card yt-dark-card">
               <div class="yt-chart-header">
                 <div>
-                  <h3>Performance des vidéos</h3>
-                  <p class="yt-chart-subtitle">20 dernières vidéos</p>
+                  <h3>Performance mensuelle</h3>
+                  <p class="yt-chart-subtitle">Évolution sur les derniers mois</p>
                 </div>
                 <div class="yt-chart-legend">
                   <span class="yt-legend-item yt-legend-views">● Vues</span>
@@ -303,11 +365,21 @@
               </div>
             </div>
 
-            <!-- Top Videos -->
+            <!-- Top Videos Tabs -->
             <div class="yt-top-videos yt-dark-card">
-              <h3>🔥 Top Vidéos par Engagement</h3>
-              <div class="yt-videos-list" id="topVideosList">
-                <!-- Dynamically filled -->
+              <div class="yt-top-tabs">
+                <button class="yt-tab-btn active" data-tab="shorts">⚡ Top Shorts</button>
+                <button class="yt-tab-btn" data-tab="long">🎬 Top Vidéos longues</button>
+              </div>
+              <div class="yt-tab-content" id="tabShorts">
+                <div class="yt-videos-list" id="topShortsList">
+                  <!-- Dynamically filled -->
+                </div>
+              </div>
+              <div class="yt-tab-content hidden" id="tabLong">
+                <div class="yt-videos-list" id="topLongList">
+                  <!-- Dynamically filled -->
+                </div>
               </div>
             </div>
 
@@ -315,12 +387,12 @@
             <div class="ai-analysis-section card yt-dark-card">
               <div class="ai-header">
                 <div class="ai-icon-pulse">✨</div>
-                <h3>Analyse Mistral AI</h3>
+                <h3>Analyse approfondie Mistral AI</h3>
               </div>
               <div id="aiContent" class="ai-content">
                 <div class="ai-loading">
                   <div class="spinner"></div>
-                  <p>Analyse de la chaîne en cours par l'IA...</p>
+                  <p>Analyse approfondie en cours...</p>
                 </div>
               </div>
             </div>
