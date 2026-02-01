@@ -3909,7 +3909,12 @@ function initYoutubeAnalysis() {
         document.getElementById("insightDayDesc").textContent = `${insights.bestPostingDay.avgEngagement}% engagement`;
       }
 
-      document.getElementById("trendIcon").textContent = insights.trend.direction === "up" ? "📈" : "📉";
+      // Trend Card
+      const trendCard = document.getElementById("trendCard");
+      if (trendCard) {
+        trendCard.classList.remove("trend-up", "trend-down");
+        trendCard.classList.add(insights.trend.direction === "up" ? "trend-up" : "trend-down");
+      }
       document.getElementById("insightTrend").textContent = insights.trend.direction === "up" ? "En hausse" : "En baisse";
       document.getElementById("insightTrendDesc").textContent = `${insights.trend.percentage > 0 ? "+" : ""}${insights.trend.percentage}% vs avant`;
 
