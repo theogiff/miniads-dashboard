@@ -13,107 +13,107 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: "Clé API Mistral manquante" });
         }
 
-        // Calculate derived metrics
-        const viewsPerVideo = stats.videoCount > 0 ? Math.round(stats.viewCount / stats.videoCount) : 0;
-        const viewsPerSub = stats.subscriberCount > 0 ? (stats.viewCount / stats.subscriberCount).toFixed(1) : 0;
+        // --- CALCUL DES MÉTRIQUES AVANCÉES ---
 
-        const shortsVsLongEngagementDiff = stats.shortsEngagement && stats.longEngagement
-            ? (stats.shortsEngagement - stats.longEngagement).toFixed(1)
-            : null;
+        // 1. Ratio Vues/Abonnés (Viralité potentielle)
+        const subCount = parseInt(stats.subscriberCount) || 1;
+        const totalViews = parseInt(stats.viewCount) || 0;
+        const videoCount = parseInt(stats.videoCount) || 1;
 
-        const formatWinner = shortsVsLongEngagementDiff !== null
-            ? (parseFloat(shortsVsLongEngagementDiff) > 0 ? 'Shorts' : 'Vidéos longues')
-            : 'Inconnu';
+        const avgViewsGlobal = Math.round(totalViews / videoCount);
+        const viralRatio = (avgViewsGlobal / subCount * 100).toFixed(1); // % des abonnés qui regardent en moyenne
 
+        // 2. Score de Spécialisation (Shorts vs Longs)
+        const shortsCount = stats.shortsCount || 0;
+        const longCount = stats.longCount || 0;
+        const totalRecent = shortsCount + longCount || 1;
+        const shortsRatio = Math.round((shortsCount / totalRecent) * 100);
+        const longRatio = Math.round((longCount / totalRecent) * 100);
+
+        // 3. Score d'Engagement Relatif
+        const shortsEng = parseFloat(stats.shortsEngagement) || 0;
+        const longEng = parseFloat(stats.longEngagement) || 0;
+
+        // Détermination du profil de la chaîne
+        let channelProfile = "Hybride";
+        if (shortsRatio > 80) channelProfile = "Focus Shorts";
+        if (longRatio > 80) channelProfile = "Focus Longues";
+
+        // Construction des listes détaillées pour l'IA
         const topShortsDetails = topShorts?.length
-            ? topShorts.map(v => `- "${v.title}" : ${v.views} vues, ${v.engagementRate}% engagement, durée: ${v.durationFormatted}`).join('\n')
-            : "Aucun Short analysé";
+            ? topShorts.map((v, i) => `${i + 1}. "${v.title}" (${v.views} vues, ${v.engagementRate}% eng, ${v.durationFormatted})`).join('\n')
+            : "Aucune donnée";
 
         const topLongDetails = topLongVideos?.length
-            ? topLongVideos.map(v => `- "${v.title}" : ${v.views} vues, ${v.engagementRate}% engagement, durée: ${v.durationFormatted}`).join('\n')
-            : "Aucune vidéo longue analysée";
+            ? topLongVideos.map((v, i) => `${i + 1}. "${v.title}" (${v.views} vues, ${v.engagementRate}% eng, ${v.durationFormatted})`).join('\n')
+            : "Aucune donnée";
 
-        const prompt = `Tu es un consultant expert en croissance YouTube avec 10 ans d'expérience. Tu dois fournir une analyse TRÈS DÉTAILLÉE et SPÉCIFIQUE basée uniquement sur les données fournies. Évite les conseils génériques.
+        // --- PROMPT ULTIME ---
+        const prompt = `Agis comme le meilleur Consultant YouTube Stratège au monde (niveau MrBeast/Paddy Galloway). Tu es brutalement honnête, analytique et orienté résultats. Ta mission est d'auditer la chaîne "${channelName || 'Inconnue'}" pour exploser sa croissance.
 
 ═══════════════════════════════════════
-DONNÉES DE LA CHAÎNE: ${channelName || 'Inconnue'}
+💿 BASE DE DONNÉES ANALYTIQUE
 ═══════════════════════════════════════
 
-📊 MÉTRIQUES PRINCIPALES:
-• Abonnés: ${stats.subscriberCount?.toLocaleString() || 0}
-• Vues totales: ${stats.viewCount?.toLocaleString() || 0}
-• Vidéos publiées: ${stats.videoCount || 0}
-• Vues moyennes par vidéo: ${viewsPerVideo?.toLocaleString() || 0}
-• Ratio vues/abonnés: ${viewsPerSub}x
+� IDENTITÉ:
+• Profil: ${channelProfile} (${shortsRatio}% Shorts / ${longRatio}% Longues)
+• Abonnés: ${stats.subscriberCount?.toLocaleString()}
+• Vues Totales: ${stats.viewCount?.toLocaleString()}
+• Ratio Viralité (Vues/Subs): ${viralRatio}% (Moyenne industrielle: 10-20%)
 
-📹 PERFORMANCE PAR FORMAT:
-┌─ SHORTS (≤60s)
-│  • Quantité: ${stats.shortsCount || 0} vidéos
-│  • Engagement moyen: ${stats.shortsEngagement || 'N/A'}%
-│  • Vues moyennes: ${stats.shortsAvgViews?.toLocaleString() || 'N/A'}
-└─ VIDÉOS LONGUES
-   • Quantité: ${stats.longCount || 0} vidéos
-   • Engagement moyen: ${stats.longEngagement || 'N/A'}%
-   • Vues moyennes: ${stats.longAvgViews?.toLocaleString() || 'N/A'}
+� PERFORMANCE COMPARÉE:
+┌─ SHORTS
+│  • Volume: ${shortsCount} vidéos
+│  • Engagement: ${shortsEng}% (Moyenne: 3-5%)
+│  • Vues Moyennes: ${stats.shortsAvgViews?.toLocaleString()}
+└─ LONGUES
+   • Volume: ${longCount} vidéos
+   • Engagement: ${longEng}% (Moyenne: 2-4%)
+   • Vues Moyennes: ${stats.longAvgViews?.toLocaleString()}
 
-🏆 FORMAT GAGNANT: ${formatWinner} (${shortsVsLongEngagementDiff !== null ? `différence de ${Math.abs(shortsVsLongEngagementDiff)}% d'engagement` : 'données insuffisantes'})
+⚡ SIGNAUX DE TENDANCE:
+• Tendance Actuelle: ${insights?.trend?.direction === 'up' ? '🟢 EN HAUSSE' : '🔴 EN BAISSE'} de ${insights?.trend?.percentage}%
+• Durée "Sweet Spot": ${insights?.optimalDuration?.label} (${insights?.optimalDuration?.avgEngagement}% eng)
+• Timing Idéal: ${insights?.bestPostingDay?.day} à ${insights?.bestPostingTime?.hourFormatted}
 
-⏱️ ANALYSE DE DURÉE OPTIMALE:
-• Durée la plus performante: ${insights?.optimalDuration?.label || 'Non déterminé'}
-• Engagement pour cette durée: ${insights?.optimalDuration?.avgEngagement || 'N/A'}%
-• Nombre de vidéos analysées: ${insights?.optimalDuration?.count || 0}
-
-📅 TIMING DE PUBLICATION:
-• Meilleur horaire: ${insights?.bestPostingTime?.hourFormatted || 'Non déterminé'} (${insights?.bestPostingTime?.avgEngagement || 'N/A'}% engagement)
-• Meilleur jour: ${insights?.bestPostingDay?.day || 'Non déterminé'} (${insights?.bestPostingDay?.avgEngagement || 'N/A'}% engagement)
-
-📈 TENDANCE DE CROISSANCE:
-• Direction: ${insights?.trend?.direction === 'up' ? 'HAUSSE' : 'BAISSE'}
-• Variation: ${insights?.trend?.percentage > 0 ? '+' : ''}${insights?.trend?.percentage || 0}%
-• Basé sur: Comparaison des 10 dernières vidéos vs les 10 précédentes
-
-🎯 TOP SHORTS ANALYSÉS:
+⭐ TOP PERFORMERS (Modèles à suivre):
+Shorts:
 ${topShortsDetails}
 
-🎬 TOP VIDÉOS LONGUES ANALYSÉES:
+Longues:
 ${topLongDetails}
 
 ═══════════════════════════════════════
-INSTRUCTIONS D'ANALYSE
+📝 RAPPORT D'AUDIT STRATÉGIQUE (HTML)
 ═══════════════════════════════════════
 
-Réponds en HTML avec les sections suivantes. Sois TRÈS PRÉCIS avec des chiffres et des comparaisons. PAS de conseils vagues ou génériques.
+Réponds UNIQUEMENT avec ce code HTML structuré. Sois direct. Pas de bla-bla.
 
-<h4>Diagnostic de la chaîne</h4>
-<p>Analyse l'état de santé de la chaîne en 4-5 phrases. Mentionne:
-- Le ratio vues/abonnés (${viewsPerSub}x) et ce que ça signifie (bon: >30x, moyen: 10-30x, faible: <10x)
-- La croissance actuelle (${insights?.trend?.percentage}%)
-- Les forces et faiblesses spécifiques basées sur les données</p>
+<div class="ai-audit-container">
 
-<h4>Analyse Shorts vs Vidéos longues</h4>
-<p>Compare en détail les deux formats avec les chiffres exacts. Explique pourquoi ${formatWinner} performe mieux. Donne une recommandation de ratio (ex: "70% Shorts, 30% Long" avec justification basée sur les données).</p>
+  <h4>🚨 Diagnostic Vital</h4>
+  <p>En 2 phrases percutantes : La chaîne est-elle en bonne santé ? Le ratio viralité de <strong>${viralRatio}%</strong> indique-t-il une audience captive ou fantôme ? Quel est le problème N°1 visible ?</p>
 
-<h4>Optimisation de la durée</h4>
-<p>Basé sur la durée optimale de ${insights?.optimalDuration?.label || 'N/A'}, explique pourquoi cette durée fonctionne. Donne des conseils concrets pour structurer les vidéos de cette durée (hook, contenu, call-to-action).</p>
+  <h4>⚔️ Bataille des Formats : Le Verdict</h4>
+  <p>Analyse sans pitié. Tes Shorts (${shortsEng}%) vs Tes Longues (${longEng}%).
+  Le format gagnant est <strong>${shortsEng > longEng ? 'SHORTS' : 'LONGUES'}</strong>.
+  Pourquoi ? (Analyse la rétention vs l'effort). Recommandation de mix de contenu précise (ex: 80/20).</p>
 
-<h4>Stratégie de publication</h4>
-<p>Basé sur les données (meilleur horaire: ${insights?.bestPostingTime?.hourFormatted || 'N/A'}, meilleur jour: ${insights?.bestPostingDay?.day || 'N/A'}), crée un calendrier de publication précis. Explique pourquoi ces moments fonctionnent (lié au type d'audience probable).</p>
+  <h4>🧬 Analyse ADN des Top Vidéos</h4>
+  <p>Regarde les titres et stats des top vidéos ci-dessus. Décode la psychologie :
+  Quels mots-clés ? Quelle émotion (Curiosité, Peur, Utilité) ? Quel type de miniature suggéré ?
+  Trouve le "Pattern de Succès" unique de cette chaîne.</p>
 
-<h4>Analyse des top vidéos</h4>
-<p>Analyse les points communs des vidéos les plus performantes. Qu'est-ce qui fait leur succès ? Titre, format, durée, sujet ? Identifie les patterns à reproduire.</p>
+  <h4>🚀 Plan d'Attaque (Next Steps)</h4>
+  <ul class="ai-action-list">
+    <li><strong>Le Hack Immédiat :</strong> Une action qui prend 5 min pour booster la prochaine vidéo.</li>
+    <li><strong>La Stratégie Contenu :</strong> Basé sur la durée optimale de ${insights?.optimalDuration?.label}, quel type de vidéo exacte faire demain (Titre + Concept).</li>
+    <li><strong>L'Objectif Chiffré :</strong> Viser X vues/video basé sur la tendance actuelle.</li>
+  </ul>
 
-<h4>Plan d'action immédiat</h4>
-<p>Donne exactement 5 actions ULTRA-SPÉCIFIQUES avec des chiffres:
-<ul>
-<li><strong>Cette semaine:</strong> [action spécifique basée sur les données]</li>
-<li><strong>Ce mois:</strong> [objectif chiffré réaliste basé sur la tendance actuelle]</li>
-<li><strong>Format à prioriser:</strong> [avec ratio précis]</li>
-<li><strong>Durée cible:</strong> [durée exacte]</li>
-<li><strong>Expérimentation:</strong> [test A/B suggéré basé sur les patterns observés]</li>
-</ul>
-</p>
+</div>
 
-Utilise <strong> pour les données importantes. Sois direct et professionnel.`;
+Ton ton doit être : Expert, Datavore, Actionnable. Utilise des mots forts.`;
 
         const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
             method: "POST",
@@ -124,8 +124,8 @@ Utilise <strong> pour les données importantes. Sois direct et professionnel.`;
             body: JSON.stringify({
                 model: "mistral-small-latest",
                 messages: [{ role: "user", content: prompt }],
-                temperature: 0.6,
-                max_tokens: 3000,
+                temperature: 0.5, // Plus bas pour être plus analytique et moins "créatif/random"
+                max_tokens: 2500,
             }),
         });
 
@@ -145,4 +145,3 @@ Utilise <strong> pour les données importantes. Sois direct et professionnel.`;
         res.status(500).json({ error: "Erreur lors de l'analyse IA" });
     }
 }
-

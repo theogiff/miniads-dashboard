@@ -3638,6 +3638,53 @@ body.admin-mode .foot {
   color: var(--text-muted);
 }
 
+/* AI Audit Report Styles */
+.ai-audit-container h4 {
+  color: #7c3aed;
+  font-size: 1.1rem;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.2);
+  padding-bottom: 8px;
+}
+
+.ai-audit-container h4:first-child {
+  margin-top: 0;
+}
+
+.ai-audit-container p {
+  color: var(--text-medium);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.ai-audit-container strong {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.ai-action-list {
+  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+  padding: 20px 20px 20px 40px;
+  margin-top: 16px;
+  border-left: 4px solid #7c3aed;
+}
+
+.ai-action-list li {
+  margin-bottom: 12px;
+  color: var(--text-medium);
+  padding-left: 8px;
+}
+
+.ai-action-list li strong {
+  color: #7c3aed;
+}
+
+.ai-action-list li:last-child {
+  margin-bottom: 0;
+}
+
 /* Format Comparison Section */
 .yt-format-comparison {
   padding: 28px;
