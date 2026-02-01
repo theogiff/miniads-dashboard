@@ -429,4 +429,134 @@ app.get("/api/client/bySlug/:slug", async (req, res) => {
   }
 });
 
+// --- Integrations YouTube & Mistral ---
+
+app.post("/api/youtube/stats", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "URL requise" });
+
+    // 1. Extraire l'ID ou le maintainer handle
+    // Formats: youtube.com/@Handle, youtube.com/channel/ID, youtube.com/user/USER
+    let channelId = null;
+    let username = null;
+
+    const u = new URL(url);
+    const path = u.pathname;
+
+    if (path.startsWith("/channel/")) {
+      channelId = path.split("/")[2];
+    } else if (path.startsWith("/user/")) {
+      username = path.split("/")[2];
+    } else if (path.startsWith("/@")) {
+      // On doit utiliser search pour trouver l'ID via le handle
+      // Mais l'API v3 search n'est pas toujours directe pour @handle -> ID sans cout
+      // On va utiliser search list avec q=@handle type=channel
+      username = path.slice(1); // remove @
+    } else {
+      // Tenter via search genéral si pas de format connu
+      username = path.replace("/", "");
+    }
+
+    const youtube = google.youtube({
+      version: "v3",
+      auth: process.env.YOUTUBE_API_KEY,
+    });
+
+    if (!channelId) {
+      // Recherche l'ID
+      const q = path.startsWith("/@") ? path : url;
+      const searchRes = await youtube.search.list({
+        part: "snippet",
+        q: q,
+        type: "channel",
+        maxResults: 1,
+      });
+      if (!searchRes.data.items?.length) {
+        return res.status(404).json({ error: "Chaîne introuvable" });
+      }
+      channelId = searchRes.data.items[0].snippet.channelId;
+    }
+
+    // 2. Récupérer les stats
+    const statsRes = await youtube.channels.list({
+      part: "snippet,statistics,contentDetails",
+      id: channelId,
+    });
+
+    if (!statsRes.data.items?.length) {
+      return res.status(404).json({ error: "Détails de la chaîne introuvables" });
+    }
+
+    const item = statsRes.data.items[0];
+    const snippet = item.snippet;
+    const stats = item.statistics;
+
+    res.json({
+      title: snippet.title,
+      description: snippet.description,
+      customUrl: snippet.customUrl,
+      thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url,
+      subscriberCount: stats.subscriberCount,
+      viewCount: stats.viewCount,
+      videoCount: stats.videoCount,
+    });
+
+  } catch (e) {
+    console.error("Erreur API YouTube:", e.message);
+    // Gestion spécifique si quota dépassé etc
+    res.status(500).json({ error: "Erreur lors de l'analyse YouTube" });
+  }
+});
+
+app.post("/api/mistral/analyze", async (req, res) => {
+  try {
+    const { stats, channelName } = req.body;
+    if (!process.env.MISTRAL_API_KEY) {
+      return res.status(500).json({ error: "Clé API Mistral manquante" });
+    }
+
+    // Prompt simple
+    const prompt = `
+    Tu es un expert en stratégie YouTube. Analyse les statistiques suivantes pour la chaîne "${channelName || 'Inconnue'}":
+    - Abonnés: ${stats.subscriberCount}
+    - Vues totales: ${stats.viewCount}
+    - Nombre de vidéos: ${stats.videoCount}
+    - Description: ${stats.description ? stats.description.slice(0, 300) + '...' : 'Aucune'}
+
+    Donne-moi 3 conseils courts, percutants et personnalisés pour améliorer cette chaîne, et une courte analyse de son état actuel (en 2 phrases). 
+    Format HTML simple (utilise <p>, <ul>, <li>, <strong>). Reste bienveillant mais direct.
+    `;
+
+    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.MISTRAL_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "mistral-tiny", // ou mistral-small selon dispo
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Mistral API Error:", errText);
+      throw new Error("Erreur Mistral API");
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "Pas de réponse générée.";
+
+    res.json({ analysis: content });
+
+  } catch (e) {
+    console.error("Erreur API Mistral:", e.message);
+    res.status(500).json({ error: "Erreur lors de l'analyse IA" });
+  }
+});
+
+// --- Exports ---
 export default app;

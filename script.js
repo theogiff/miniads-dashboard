@@ -3801,3 +3801,86 @@ if (isAdminRoute) {
     document.body.appendChild(notice);
   }
 }
+
+// --- YouTube & Mistral AI Logic ---
+
+function initYoutubeAnalysis() {
+  const form = document.getElementById("youtubeAnalyzeForm");
+  const input = document.getElementById("youtubeUrlInput");
+  const resultsDiv = document.getElementById("youtubeResults");
+  const errorMsg = document.getElementById("youtubeError");
+  const analyzeBtn = document.getElementById("youtubeAnalyzeBtn");
+
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const url = input.value.trim();
+    if (!url) return;
+
+    // Reset UI
+    resultsDiv.classList.add("hidden");
+    errorMsg.classList.add("hidden");
+    errorMsg.textContent = "";
+    analyzeBtn.disabled = true;
+    const originalBtnContent = analyzeBtn.innerHTML;
+    analyzeBtn.innerHTML = `<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span> Analyse...`;
+
+    try {
+      // 1. Get YouTube Stats
+      const statsRes = await fetch("/api/youtube/stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      
+      const statsData = await statsRes.json();
+      if (!statsRes.ok) throw new Error(statsData.error || "Erreur lors de l'analyse YouTube");
+
+      // Update UI with Stats
+      document.getElementById("channelAvatar").src = statsData.thumbnail;
+      document.getElementById("channelTitle").textContent = statsData.title;
+      document.getElementById("channelCustomUrl").textContent = statsData.customUrl ? `@${statsData.customUrl}` : "";
+      document.getElementById("channelSubscribers").textContent = `${formatCount(statsData.subscriberCount)} abonnés`;
+      document.getElementById("channelDescription").textContent = statsData.description || "Aucune description.";
+      
+      document.getElementById("statsSubs").textContent = formatCount(statsData.subscriberCount);
+      document.getElementById("statsViews").textContent = formatCount(statsData.viewCount);
+      document.getElementById("statsVideos").textContent = statsData.videoCount;
+
+      resultsDiv.classList.remove("hidden");
+
+      // 2. Get AI Insights
+      const aiContentDiv = document.getElementById("aiContent");
+      aiContentDiv.innerHTML = `
+        <div class="ai-loading">
+            <div class="spinner"></div>
+            <p>Analyse de la chaîne en cours par l'IA...</p>
+        </div>
+      `;
+
+      const aiRes = await fetch("/api/mistral/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stats: statsData, channelName: statsData.title }),
+      });
+
+      const aiData = await aiRes.json();
+      if (!aiRes.ok) throw new Error(aiData.error || "Erreur lors de l'analyse IA");
+
+      // Update AI Content
+      aiContentDiv.innerHTML = aiData.analysis;
+
+    } catch (err) {
+      console.error(err);
+      errorMsg.textContent = err.message;
+      errorMsg.classList.remove("hidden");
+    } finally {
+      analyzeBtn.disabled = false;
+      analyzeBtn.innerHTML = originalBtnContent || `<span>Analyser</span>`;
+    }
+  });
+}
+
+// Init when DOM loaded
+document.addEventListener("DOMContentLoaded", initYoutubeAnalysis);

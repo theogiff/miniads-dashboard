@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css"/>
+  <link rel="stylesheet" href="./style.css" />
   <script>
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
   </script>
 </head>
+
 <body>
   <div id="clientContainer" class="client-container">
     <aside class="client-sidebar">
@@ -34,6 +36,10 @@
             <span class="client-nav-label">Extension Miniads</span>
             <span class="client-nav-pill">Nouveau</span>
           </button>
+          <button type="button" class="client-nav-link" data-client-view="youtube-analysis">
+            <span class="client-nav-label">Analyse YouTube</span>
+            <span class="client-nav-pill pill-ai">IA</span>
+          </button>
         </nav>
         <div class="client-sidebar-footer">
           <p class="client-sidebar-help">Besoin d’aide ? contact@miniads.fr</p>
@@ -48,7 +54,8 @@
             <span class="crumb">Dashboard</span>
             <div class="topbar-heading">
               <h1 id="clientTitle">Suivi de vos miniatures</h1>
-              <p class="topbar-subtitle" id="clientGreeting">Retrouvez l’historique complet de vos demandes et leurs statuts.</p>
+              <p class="topbar-subtitle" id="clientGreeting">Retrouvez l’historique complet de vos demandes et leurs
+                statuts.</p>
             </div>
           </div>
         </div>
@@ -92,7 +99,8 @@
           <div id="clientTableHost" class="table-host"></div>
         </div>
 
-        <section class="client-view miniatures-view" id="clientMiniaturesView" data-client-view="miniatures" aria-labelledby="miniaturesTitle">
+        <section class="client-view miniatures-view" id="clientMiniaturesView" data-client-view="miniatures"
+          aria-labelledby="miniaturesTitle">
           <div class="miniatures-header">
             <span class="miniatures-pill">Drive sécurisé</span>
             <h2 id="miniaturesTitle">Mes miniatures</h2>
@@ -110,9 +118,12 @@
               </div>
               <div class="miniatures-embed-meta">
                 <h3 id="miniaturesEmbedTitle">Dossier principal</h3>
-                <p id="miniaturesEmbedSubtitle">Prévisualise directement ton dossier Drive pour retrouver rapidement ton historique.</p>
-                <p class="miniatures-embed-hint hidden" id="miniaturesEmbedHint">Impossible d’afficher un aperçu pour ce dossier. Ouvre-le directement dans Google Drive.</p>
-                <a id="miniaturesExternalLink" class="miniatures-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Ouvrir dans Google Drive</a>
+                <p id="miniaturesEmbedSubtitle">Prévisualise directement ton dossier Drive pour retrouver rapidement ton
+                  historique.</p>
+                <p class="miniatures-embed-hint hidden" id="miniaturesEmbedHint">Impossible d’afficher un aperçu pour ce
+                  dossier. Ouvre-le directement dans Google Drive.</p>
+                <a id="miniaturesExternalLink" class="miniatures-link" href="#" target="_blank" rel="noopener"
+                  aria-disabled="true">Ouvrir dans Google Drive</a>
               </div>
             </article>
             <div class="miniatures-folders card" id="miniaturesFolders">
@@ -125,13 +136,15 @@
           </div>
         </section>
 
-        <section class="client-view extension-view" id="clientExtensionView" data-client-view="extension-miniads" aria-labelledby="extensionTitle">
+        <section class="client-view extension-view" id="clientExtensionView" data-client-view="extension-miniads"
+          aria-labelledby="extensionTitle">
           <div class="extension-hero card">
             <div class="extension-hero-text">
               <span class="extension-pill">Extension Chrome</span>
               <h2 id="extensionTitle">Installer l’extension Miniads</h2>
               <p class="extension-subtitle">
-                Testez vos miniatures directement dans un faux feed YouTube, partagez vos essais et gagnez du temps sur vos validations.
+                Testez vos miniatures directement dans un faux feed YouTube, partagez vos essais et gagnez du temps sur
+                vos validations.
               </p>
               <ul class="extension-list">
                 <li>Précharge vos visuels depuis “Mes miniatures”.</li>
@@ -140,7 +153,8 @@
               </ul>
               <div class="extension-actions">
                 <button type="button" class="btn extension-btn" id="extensionInstallBtn">Installer l’extension</button>
-                <a class="btn btn-secondary extension-btn-secondary" id="extensionDocBtn" href="./miniads-claude/preview.html" target="_blank" rel="noopener">Accéder à l’extension</a>
+                <a class="btn btn-secondary extension-btn-secondary" id="extensionDocBtn"
+                  href="./miniads-claude/preview.html" target="_blank" rel="noopener">Accéder à l’extension</a>
               </div>
             </div>
             <div class="extension-hero-visual">
@@ -184,8 +198,78 @@
                 <li>Dans “Mes miniatures”, cliquez sur “Voir sur le feed YouTube” pour précharger votre visuel.</li>
               </ol>
               <div class="extension-inline-cta">
-                <button type="button" class="btn extension-btn" id="extensionInstallBtnInline">Installer maintenant</button>
+                <button type="button" class="btn extension-btn" id="extensionInstallBtnInline">Installer
+                  maintenant</button>
                 <span class="extension-note">Besoin d’aide ? contact@miniads.fr</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="client-view youtube-view" id="clientYoutubeView" data-client-view="youtube-analysis"
+          aria-labelledby="youtubeTitle">
+          <div class="youtube-hero card">
+            <div class="youtube-hero-content">
+              <span class="youtube-pill">Powered by Mistral AI</span>
+              <h2 id="youtubeTitle">Analyse YouTube & IA</h2>
+              <p class="youtube-subtitle">Entrez l'URL d'une chaîne YouTube pour obtenir des statistiques détaillées et
+                des recommandations personnalisées générées par l'IA.</p>
+
+              <form id="youtubeAnalyzeForm" class="youtube-search-box">
+                <input type="url" id="youtubeUrlInput" placeholder="https://www.youtube.com/@MrBeast" required />
+                <button type="submit" class="btn btn-primary" id="youtubeAnalyzeBtn">
+                  <span>Analyser</span>
+                </button>
+              </form>
+              <p class="youtube-error hidden" id="youtubeError"></p>
+            </div>
+          </div>
+
+          <div id="youtubeResults" class="youtube-results hidden">
+            <!-- Channel Header -->
+            <div class="channel-header card">
+              <img id="channelAvatar" src="" alt="Avatar" class="channel-avatar">
+              <div class="channel-info">
+                <h3 id="channelTitle">Nom de la chaîne</h3>
+                <div class="channel-meta">
+                  <span id="channelCustomUrl">@handle</span>
+                  <span class="separator">•</span>
+                  <span id="channelSubscribers">0 abonnés</span>
+                </div>
+                <p id="channelDescription" class="channel-desc"></p>
+              </div>
+            </div>
+
+            <!-- KPI Grid -->
+            <div class="youtube-kpi-grid">
+              <article class="kpi-card">
+                <div class="kpi-icon">👥</div>
+                <div class="kpi-value" id="statsSubs">-</div>
+                <div class="kpi-label">Abonnés</div>
+              </article>
+              <article class="kpi-card">
+                <div class="kpi-icon">👁️</div>
+                <div class="kpi-value" id="statsViews">-</div>
+                <div class="kpi-label">Vues totales</div>
+              </article>
+              <article class="kpi-card">
+                <div class="kpi-icon">📹</div>
+                <div class="kpi-value" id="statsVideos">-</div>
+                <div class="kpi-label">Vidéos publiées</div>
+              </article>
+            </div>
+
+            <!-- AI Analysis -->
+            <div class="ai-analysis-section card">
+              <div class="ai-header">
+                <div class="ai-icon-pulse">✨</div>
+                <h3>Analyse Mistral AI</h3>
+              </div>
+              <div id="aiContent" class="ai-content">
+                <div class="ai-loading">
+                  <div class="spinner"></div>
+                  <p>Analyse de la chaîne en cours par l'IA...</p>
+                </div>
               </div>
             </div>
           </div>
@@ -329,7 +413,8 @@
           </div>
         </div>
 
-        <p class="admin-dashboard-empty hidden" id="adminDashboardEmpty">Aucun enregistrement pour la période sélectionnée.</p>
+        <p class="admin-dashboard-empty hidden" id="adminDashboardEmpty">Aucun enregistrement pour la période
+          sélectionnée.</p>
       </section>
 
       <section class="admin-view" id="adminInsightsView">
@@ -393,7 +478,8 @@
               </label>
               <small id="shareHint">Sélectionne un client pour générer le lien de partage.</small>
             </div>
-            <div class="admin-table-placeholder" id="adminTablePlaceholder">Sélectionne un client pour afficher son historique.</div>
+            <div class="admin-table-placeholder" id="adminTablePlaceholder">Sélectionne un client pour afficher son
+              historique.</div>
             <div id="adminTableHost" class="table-host hidden"></div>
           </div>
         </div>
@@ -402,13 +488,15 @@
       <section class="admin-view" id="adminExtensionView">
         <div class="extension-card card">
           <h2>Extension YouTube</h2>
-          <p>Installe l’extension Miniads pour prévisualiser automatiquement les visuels directement dans YouTube Studio.</p>
+          <p>Installe l’extension Miniads pour prévisualiser automatiquement les visuels directement dans YouTube
+            Studio.</p>
           <ul class="panel-list">
             <li>Code source local : <code>youtube-preview/</code></li>
             <li>Chrome ➝ Extensions ➝ Mode développeur ➝ Charger l’extension non empaquetée.</li>
             <li>Sur YouTube Studio, les miniatures apparaissent au survol des vidéos.</li>
           </ul>
-          <a class="btn-secondary" href="./youtube-preview/README.MD" target="_blank" rel="noopener">Ouvrir la documentation</a>
+          <a class="btn-secondary" href="./youtube-preview/README.MD" target="_blank" rel="noopener">Ouvrir la
+            documentation</a>
         </div>
       </section>
     </div>
@@ -428,7 +516,11 @@
               <th>Status de la commande</th>
             </tr>
           </thead>
-          <tbody id="summaryBody"><tr><td colspan="5" class="empty">En attente de données…</td></tr></tbody>
+          <tbody id="summaryBody">
+            <tr>
+              <td colspan="5" class="empty">En attente de données…</td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </section>
@@ -451,7 +543,8 @@
           <p id="miniaturePipSubtitle">Aperçu plein écran</p>
         </div>
         <div class="mini-pip-actions">
-          <a id="miniaturePipOpen" class="mini-card-btn mini-card-btn-primary" href="#" target="_blank" rel="noopener">Ouvrir</a>
+          <a id="miniaturePipOpen" class="mini-card-btn mini-card-btn-primary" href="#" target="_blank"
+            rel="noopener">Ouvrir</a>
           <a id="miniaturePipDownload" class="mini-card-btn" href="#" target="_blank" rel="noopener">Télécharger</a>
         </div>
       </div>
@@ -476,4 +569,5 @@
   <script src="./admin-auth.js"></script>
   <script src="./script.js"></script>
 </body>
+
 </html>
