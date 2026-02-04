@@ -855,8 +855,10 @@ const extensionInstallBtnInline = document.getElementById("extensionInstallBtnIn
 const topbar = document.querySelector(".topbar");
 
 async function fetchDriveFilesForClient(slug) {
+  const key = getParam("key");
+  const query = key ? `?key=${encodeURIComponent(key)}` : "";
   const res = await fetch(
-    `/api/client/bySlug/${encodeURIComponent(slug)}`
+    `/api/client/bySlug/${encodeURIComponent(slug)}${query}`
   );
 
   if (!res.ok) throw new Error("API Drive KO");
