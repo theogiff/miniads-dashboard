@@ -2755,6 +2755,16 @@ function detectAgencyFields(rows) {
     "volume"
   ]);
 
+  let youtubeField = resolveFieldName(allKeys, null, [
+    "chaine youtube",
+    "youtube",
+    "lien youtube",
+    "channel url",
+    "youtube link",
+    "url",
+    "lien"
+  ]);
+
   if (revenueField && !isLikelyNumericColumn(rows, revenueField)) {
     revenueField = null;
   }
@@ -2763,7 +2773,7 @@ function detectAgencyFields(rows) {
     const fallback = allKeys.find(key => {
       if (key === quantityField) return false;
       const norm = normalizeKey(key);
-      if (/date|client|statut|status|titre|title|nom|description|commentaire|note|status|phase|lien|url/.test(norm)) {
+      if (/date|client|statut|status|titre|title|nom|description|commentaire|note|status|phase|lien|url|youtube/.test(norm)) {
         return false;
       }
       return isLikelyNumericColumn(rows, key);
@@ -2777,7 +2787,8 @@ function detectAgencyFields(rows) {
     requestDateField,
     creationDateField,
     revenueField,
-    quantityField
+    quantityField,
+    youtubeField
   };
 }
 
@@ -3682,6 +3693,34 @@ async function loadAirtable({ apiKey, baseId, tableId, view, filterByFormula } =
   try {
     const rows = await fetchAirtableRows({ apiKey, baseId, tableId, view, filterByFormula });
     renderRows(rows);
+
+    // Auto-detect YouTube channel
+    if (rows && rows.length && currentClientConfig) {
+      const fields = detectAgencyFields(rows);
+      if (fields.youtubeField) {
+        // Find row for current client
+        const clientRow = rows.find(r => {
+          if (!fields.creatorField) return true; // if no creator field, take first
+          return toSlug(r[fields.creatorField]) === currentClientConfig.slug;
+        });
+
+        if (clientRow) {
+          const ytUrl = extractFirstUrl(clientRow[fields.youtubeField]);
+          if (ytUrl) {
+            console.log("Auto-connecting YouTube:", ytUrl);
+            const input = document.getElementById("youtubeUrlInput");
+            const form = document.getElementById("youtubeAnalyzeForm");
+            if (input && form && !input.value) {
+              input.value = ytUrl;
+              setTimeout(() => {
+                const submitEvent = new Event("submit");
+                form.dispatchEvent(submitEvent);
+              }, 800);
+            }
+          }
+        }
+      }
+    }
   } catch (e) {
     handleLoadError(e);
   }
@@ -3824,6 +3863,17 @@ function initYoutubeAnalysis() {
   const analyzeBtn = document.getElementById("youtubeAnalyzeBtn");
 
   if (!form) return;
+
+  // Auto-fill and analyze if param exists
+  const autoUrl = getParam("youtube");
+  if (autoUrl) {
+    input.value = autoUrl;
+    // Slight delay to ensure UI is ready
+    setTimeout(() => {
+      const submitEvent = new Event("submit");
+      form.dispatchEvent(submitEvent);
+    }, 500);
+  }
 
   // Setup tab switching
   document.querySelectorAll(".yt-tab-btn").forEach(btn => {
