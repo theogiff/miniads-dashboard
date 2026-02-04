@@ -2757,6 +2757,8 @@ function detectAgencyFields(rows) {
 
   let youtubeField = resolveFieldName(allKeys, null, [
     "chaine youtube",
+    "chaine",
+    "channel",
     "youtube",
     "lien youtube",
     "channel url",
