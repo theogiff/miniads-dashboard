@@ -1,5 +1,21 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
+@font-face {
+  font-family: "Degular Display";
+  src: url("Font/Degular Display Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Degular Display";
+  src: url("Font/Degular Display Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 *,
 *::before,
 *::after {
@@ -8,17 +24,18 @@
 
 :root {
   --font-sans: "Inter", "Poppins", "Segoe UI", sans-serif;
-  --app-gradient: #fafaf9;
+  --font-display: "Degular Display", var(--font-sans);
+  --app-gradient: #f4f2f1;
   --surface-glass: #ffffff;
   --surface-strong: #ffffff;
-  --surface-muted: #f5f5f4;
-  --surface-subtle: #fafaf9;
-  --border-soft: #e7e5e4;
-  --border-strong: #d6d3d1;
-  --border-divider: #f5f5f4;
-  --accent: #f59a2d;
-  --accent-strong: #d97706;
-  --accent-muted: rgba(245, 154, 45, 0.10);
+  --surface-muted: #f1f0ee;
+  --surface-subtle: #f4f2f1;
+  --border-soft: #ded8d3;
+  --border-strong: #ccc6c0;
+  --border-divider: #ebe7e3;
+  --accent: #ff991c;
+  --accent-strong: #e68a00;
+  --accent-muted: rgba(255, 153, 28, 0.12);
   --trend-positive: #1f9d5c;
   --trend-positive-soft: rgba(31, 157, 92, 0.14);
   --trend-neutral: #d97706;
@@ -35,12 +52,12 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.04);
-  --radius-xl: 16px;
-  --radius-lg: 12px;
-  --radius-md: 8px;
-  --radius-sm: 6px;
-  --blur-soft: 0px;
-  --blur-strong: 0px;
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --blur-soft: 12px;
+  --blur-strong: 12px;
   --transition: 0.15s ease;
   --space-xs: 4px;
   --space-sm: 8px;
@@ -312,12 +329,12 @@ body.admin-mode .foot {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 20px 24px;
+  padding: 24px 28px;
   border-radius: var(--radius-xl);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-sm);
-  backdrop-filter: none;
+  backdrop-filter: blur(var(--blur-soft));
   top: 32px;
   width: 100%;
   margin: 0;
@@ -347,6 +364,7 @@ body.admin-mode .foot {
 }
 
 .topbar-heading h1 {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-strong);
@@ -362,7 +380,7 @@ body.admin-mode .foot {
   align-items: center;
   justify-content: center;
   padding: 4px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: none;
@@ -595,7 +613,7 @@ body.admin-mode .foot {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 24px;
+  padding: 32px;
   border-radius: var(--radius-xl);
   background: #ffffff;
   border: 1px solid var(--border-soft);
@@ -629,7 +647,7 @@ body.admin-mode .foot {
   align-items: center;
   justify-content: center;
   padding: 4px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -682,7 +700,7 @@ body.admin-mode .foot {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding: 20px;
+  padding: 24px;
   border-radius: var(--radius-lg);
   background: var(--surface-muted);
   border: 1px solid var(--border-divider);
@@ -744,6 +762,7 @@ body.admin-mode .foot {
 }
 
 .hero-card-value {
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-weight: 700;
   color: var(--text-strong);
@@ -906,13 +925,13 @@ body.admin-mode .foot {
 }
 
 .sidebar {
-  width: 240px;
+  width: 260px;
   border-radius: var(--radius-xl);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid var(--border-soft);
-  backdrop-filter: none;
+  backdrop-filter: blur(var(--blur-soft));
   box-shadow: var(--shadow-sm);
-  padding: 20px 16px;
+  padding: 24px 18px;
   position: sticky;
   top: 32px;
   align-self: stretch;
@@ -990,6 +1009,7 @@ body.admin-mode .foot {
 }
 
 .admin-header h1 {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-strong);
@@ -1075,7 +1095,7 @@ body.admin-mode .foot {
 
 .filter-chip {
   padding: 6px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   background: var(--surface-muted);
   border: 1px solid var(--border-soft);
   font-size: 0.8rem;
@@ -1126,7 +1146,7 @@ body.admin-mode .foot {
 
 #adminApplyCustom {
   padding: 8px 14px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   background: var(--accent);
   color: #ffffff;
   font-weight: 500;
@@ -1145,7 +1165,7 @@ body.admin-mode .foot {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px;
+  padding: 20px;
   border-radius: var(--radius-lg);
   background: #ffffff;
   border: 1px solid var(--border-soft);
@@ -1161,6 +1181,7 @@ body.admin-mode .foot {
 }
 
 .kpi-summary-value {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-strong);
@@ -1242,6 +1263,7 @@ body.admin-mode .foot {
 }
 
 .insights-header h2 {
+  font-family: var(--font-display);
   font-size: 1.8rem;
 }
 
@@ -1502,7 +1524,7 @@ body.admin-mode .foot {
 
 #copyShareLink {
   padding: 10px 16px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   background: var(--accent);
   color: #ffffff;
   font-weight: 500;
@@ -1794,7 +1816,7 @@ body.admin-mode .foot {
   background: #ffffff;
   border: 1px solid var(--border-soft);
   box-shadow: none;
-  padding: 20px;
+  padding: 28px;
 }
 
 .btn-secondary {
@@ -1802,7 +1824,7 @@ body.admin-mode .foot {
   align-items: center;
   justify-content: center;
   padding: 10px 18px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   background: var(--surface-muted);
   color: var(--text-medium);
   font-weight: 500;
@@ -1875,7 +1897,7 @@ body.admin-mode .foot {
 
 .admin-login-card button {
   padding: 12px 20px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   background: var(--accent);
   color: #ffffff;
   font-weight: 600;
@@ -2469,14 +2491,14 @@ body.admin-mode .foot {
 .extension-btn {
   width: auto;
   padding: 10px 16px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   box-shadow: none;
 }
 
 .extension-btn-secondary {
   width: auto;
   padding: 10px 16px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
 }
 
 .extension-active .topbar {
@@ -2488,7 +2510,7 @@ body.admin-mode .foot {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   background: var(--accent-muted);
   color: var(--accent-strong);
   font-weight: 500;
@@ -2595,7 +2617,7 @@ body.admin-mode .foot {
   color: #ffffff;
   border: 1px solid var(--accent);
   box-shadow: none;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
 }
 
 .extension-inline-cta .extension-btn:hover {
@@ -3146,6 +3168,10 @@ body.admin-mode .foot {
   gap: 16px;
 }
 
+.youtube-hero-content h2 {
+  font-family: var(--font-display);
+}
+
 .youtube-pill {
   font-size: 0.7rem;
   font-weight: 500;
@@ -3154,7 +3180,7 @@ body.admin-mode .foot {
   color: #8b5cf6;
   background: rgba(139, 92, 246, 0.1);
   padding: 4px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
 }
 
 .youtube-subtitle {
@@ -3457,6 +3483,7 @@ body.admin-mode .foot {
 }
 
 .yt-kpi-value {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-strong);
