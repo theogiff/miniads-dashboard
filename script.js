@@ -3768,10 +3768,20 @@ function initYoutubeAnalysis() {
       const outliers = withRatio.sort((a, b) => b.ratio - a.ratio).slice(0, 10);
       document.getElementById("ytOutliersTable").innerHTML = buildTableRows(outliers, kpis.avgViews);
 
+      // KPI: show video count as trend on avg views
+      const videosLongEl = document.getElementById("statsVideosLong");
+      if (videosLongEl) videosLongEl.textContent = kpis.videoCountLong + " vidéos";
+      // KPI: show median as meta on engagement
+      const medianEl = document.getElementById("statsMedianViews");
+      if (medianEl) medianEl.textContent = "Médiane: " + formatCount(kpis.medianViews) + " vues";
+
       // Charts
       renderBarChart(allVideos);
       setupControls();
       renderTimeSeries(allVideos, currentRange, currentGran, currentMetrics);
+
+      // Top Performing + Needs Attention lists
+      populatePerfVideoLists(allVideos, kpis);
 
       resultsDiv.classList.remove("hidden");
 
@@ -3805,6 +3815,73 @@ function initYoutubeAnalysis() {
 
 // Init when DOM loaded
 document.addEventListener("DOMContentLoaded", initYoutubeAnalysis);
+
+// ===== Performance: Top Performing + Needs Attention =====
+function populatePerfVideoLists(allVideos, kpis) {
+  const topList = document.getElementById("perfTopList");
+  const bottomList = document.getElementById("perfBottomList");
+  if (!topList || !bottomList) return;
+
+  const sorted = [...allVideos].sort((a, b) => b.views - a.views);
+  const top5 = sorted.slice(0, 5);
+  const bottom5 = sorted.slice(-5).reverse();
+
+  function formatDuration(dur) {
+    if (!dur) return "";
+    const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return dur;
+    const h = match[1] ? match[1] + ":" : "";
+    const m = (match[2] || "0").padStart(2, "0");
+    const s = (match[3] || "0").padStart(2, "0");
+    return h + m + ":" + s;
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "";
+    const diff = Date.now() - d.getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days < 1) return "Aujourd'hui";
+    if (days === 1) return "Hier";
+    if (days < 30) return days + "j";
+    if (days < 365) return Math.floor(days / 30) + " mois";
+    return Math.floor(days / 365) + " an" + (Math.floor(days / 365) > 1 ? "s" : "");
+  }
+
+  function buildItem(video, isBottom) {
+    const ratio = kpis.avgViews > 0 ? ((video.views / kpis.avgViews) * 100).toFixed(0) : 0;
+    const thumbUrl = video.thumbnailUrl || "";
+    const thumbHtml = thumbUrl
+      ? `<img src="${thumbUrl}" alt="" loading="lazy">`
+      : `<div style="width:100%;height:100%;background:#e4e4e7"></div>`;
+
+    const warnHtml = isBottom && kpis.avgViews > 0
+      ? `<div class="perf-video-warn">Sous la moyenne de ${ratio > 0 ? (100 - parseInt(ratio)) : "—"}%</div>`
+      : "";
+
+    return `
+      <div class="perf-video-item">
+        <div class="perf-video-thumb">
+          ${thumbHtml}
+          <span class="perf-video-thumb-badge">${formatCount(video.views)}</span>
+        </div>
+        <div class="perf-video-info">
+          <strong title="${video.title || ""}">${(video.title || "Sans titre").slice(0, 50)}${(video.title || "").length > 50 ? "…" : ""}</strong>
+          <span>${timeAgo(video.publishedAt)}</span>
+          ${warnHtml}
+        </div>
+        <div class="perf-video-stats">
+          <span>${formatCount(video.likes || 0)} likes</span>
+          <span>${formatDuration(video.duration)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  topList.innerHTML = top5.map(v => buildItem(v, false)).join("");
+  bottomList.innerHTML = bottom5.map(v => buildItem(v, true)).join("");
+}
 
 // ===== Overview: Populate Recent Activity from Airtable =====
 function populateRecentActivity(rows, titleField, statusField, creatorField, dateField, requestDateField, creationDateField) {
