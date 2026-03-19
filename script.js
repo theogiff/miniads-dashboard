@@ -218,7 +218,8 @@ const CLIENTS = {
   //     "https://drive.google.com/drive/folders/EXEMPLE_AUTRE_DOSSIER"
   //   ], // (optionnel) plusieurs dossiers possibles
   //   driveFolderId: "1AbcXYZ", // raccourci si un seul dossier
-  //   driveFolderUrl: "https://drive.google.com/drive/folders/1AbcXYZ" // idem mais via URL
+  //   driveFolderUrl: "https://drive.google.com/drive/folders/1AbcXYZ", // idem mais via URL
+  //   stripeEmail: "client@email.com" // (optionnel) email Stripe pour charger les factures
   // }
 };
 
@@ -3543,6 +3544,14 @@ if (isAdminRoute) {
         console.warn("Drive files pour Overview non disponibles:", err.message);
       });
     }
+    // Load Stripe invoices (email from config or URL param)
+    const stripeEmail = clientConfig.stripeEmail || getParam("email") || "";
+    if (stripeEmail) {
+      loadStripeInvoices(stripeEmail);
+    } else {
+      const emptyEl = document.getElementById("billingEmpty");
+      if (emptyEl) emptyEl.textContent = "Configure stripeEmail dans la config client pour voir les factures.";
+    }
   } else {
     console.warn(`Aucun client configuré ou clé invalide pour le slug « ${clientParam} ».`);
     document.body.classList.remove("admin-mode");
@@ -4001,6 +4010,56 @@ function populateRecentWorkFromDrive(files) {
 
   if (newRequestCard) {
     grid.appendChild(newRequestCard);
+  }
+}
+
+// ===== Billing: Load Stripe invoices =====
+async function loadStripeInvoices(email) {
+  const tbody = document.getElementById("billingTableBody");
+  const emptyEl = document.getElementById("billingEmpty");
+  if (!tbody) return;
+
+  if (!email) {
+    if (emptyEl) emptyEl.textContent = "Aucun email associé à ce compte.";
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/stripe/invoices?email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (emptyEl) emptyEl.textContent = data.error || "Erreur de chargement.";
+      return;
+    }
+
+    if (!data.invoices || !data.invoices.length) {
+      if (emptyEl) emptyEl.textContent = "Aucune facture trouvée.";
+      return;
+    }
+
+    tbody.innerHTML = "";
+    data.invoices.forEach(inv => {
+      const tr = document.createElement("tr");
+      const date = new Date(inv.date * 1000).toLocaleDateString("fr-FR", { year: "numeric", month: "2-digit", day: "2-digit" });
+      const amount = new Intl.NumberFormat("fr-FR", { style: "currency", currency: inv.currency || "eur" }).format(inv.amount);
+      const statusLabel = inv.status === "paid" ? "Payée" : inv.status;
+      const statusClass = inv.status === "paid" ? "status-paid" : "";
+      const pdfLink = inv.pdf ? `<a href="${inv.pdf}" target="_blank" rel="noopener" class="bill-pdf-link">PDF</a>` : "";
+
+      tr.innerHTML = `
+        <td>${date}</td>
+        <td>${inv.description}</td>
+        <td><strong>${amount}</strong></td>
+        <td><span class="status-chip" data-status="${statusClass}">${statusLabel}</span></td>
+        <td>${pdfLink}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  } catch (e) {
+    console.error("Erreur chargement factures Stripe:", e);
+    if (emptyEl) emptyEl.textContent = "Erreur de connexion au serveur.";
   }
 }
 

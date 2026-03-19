@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css?v=15" />
+  <link rel="stylesheet" href="./style.css?v=16" />
   <script>
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
@@ -32,11 +32,11 @@
         <nav class="sidebar-nav">
           <button type="button" class="sidebar-link active" data-client-view="dashboard">
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-            <span>Overview</span>
+            <span>Tableau de bord</span>
           </button>
           <button type="button" class="sidebar-link" data-client-view="miniatures">
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-            <span>Thumbnails</span>
+            <span>Miniatures</span>
           </button>
           <button type="button" class="sidebar-link" data-client-view="youtube-analysis">
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
@@ -44,12 +44,12 @@
           </button>
           <button type="button" class="sidebar-link" data-client-view="preview">
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m10 9 5 3-5 3V9z"/></svg>
-            <span>Preview</span>
+            <span>Prévisualiser</span>
           </button>
 
           <button type="button" class="sidebar-link" data-client-view="requests">
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg>
-            <span>Requests</span>
+            <span>Demandes</span>
           </button>
         </nav>
 
@@ -57,11 +57,11 @@
         <div class="sidebar-bottom">
           <button type="button" class="sidebar-link" data-client-view="billing">
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
-            <span>Billing</span>
+            <span>Facturation</span>
           </button>
           <a class="sidebar-cta" href="mailto:contact@miniads.fr?subject=New+Request">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            <span>+ New Request</span>
+            <span>+ Nouvelle demande</span>
           </a>
         </div>
       </div>
@@ -70,10 +70,6 @@
     <div class="main-wrap">
       <!-- Top Bar -->
       <header class="topbar">
-        <div class="topbar-search">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="Search requests or assets..." class="topbar-search-input" id="globalSearch">
-        </div>
         <div class="topbar-actions">
           <button class="topbar-icon-btn" aria-label="Notifications">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -84,7 +80,7 @@
           <div class="topbar-user" id="clientBadge">
             <div class="topbar-user-info">
               <span class="topbar-user-name" id="topbarName"></span>
-              <span class="topbar-user-role" id="topbarRole">CLIENT</span>
+              <span class="topbar-user-role" id="topbarRole">Client</span>
             </div>
             <div class="topbar-user-avatar" id="topbarAvatar">?</div>
           </div>
@@ -97,11 +93,11 @@
           <!-- Page header -->
           <div class="page-header">
             <div>
-              <h2 class="page-title">Overview</h2>
+              <h2 class="page-title">Tableau de bord</h2>
               <p class="page-desc" id="clientGreeting">Suivi en temps réel de vos miniatures.</p>
             </div>
             <div class="page-header-actions">
-              <a class="btn-primary-sm" href="mailto:contact@miniads.fr?subject=New+Thumbnail">+ New Request</a>
+              <a class="btn-primary-sm" href="mailto:contact@miniads.fr?subject=New+Thumbnail">+ Nouvelle demande</a>
             </div>
           </div>
 
@@ -161,7 +157,6 @@
           <section class="ov-recent-work">
             <div class="ov-recent-work-header">
               <h3>Dernières miniatures</h3>
-              <a href="#" class="ov-link" data-client-view-link="miniatures">Voir la galerie &rsaquo;</a>
             </div>
             <div class="ov-recent-work-grid" id="recentWorkGrid">
               <article class="ov-work-card">
@@ -230,13 +225,13 @@
         <section class="client-view" id="clientPreviewView" data-client-view="preview">
           <div class="page-header">
             <div>
-              <h2 class="page-title">Preview</h2>
+              <h2 class="page-title">Prévisualiser</h2>
               <p class="page-desc">Visualise ta miniature directement dans un feed YouTube réaliste.</p>
             </div>
             <div class="page-header-actions">
               <a class="btn-outline" href="./miniads-claude/preview.html" target="_blank" rel="noopener">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                Ouvrir en plein écran
+                Plein écran
               </a>
             </div>
           </div>
@@ -251,7 +246,7 @@
           <!-- Search (before results) -->
           <div class="page-header" id="perfHeaderSearch">
             <div>
-              <h2 class="page-title" id="youtubeTitle">Performance Analytics</h2>
+              <h2 class="page-title" id="youtubeTitle">Performance</h2>
               <p class="page-desc">Analyse approfondie des performances de ta chaîne YouTube.</p>
             </div>
           </div>
@@ -342,15 +337,15 @@
             <div class="perf-two-cols">
               <div>
                 <div class="perf-section-header">
-                  <h3>Top Performing</h3>
-                  <span class="perf-badge-good">Best in class</span>
+                  <h3>Meilleures vidéos</h3>
+                  <span class="perf-badge-good">Top</span>
                 </div>
                 <div class="perf-video-list" id="perfTopList"></div>
               </div>
               <div>
                 <div class="perf-section-header">
-                  <h3>Needs Attention</h3>
-                  <span class="perf-badge-warn">À surveiller</span>
+                  <h3>À surveiller</h3>
+                  <span class="perf-badge-warn">Attention</span>
                 </div>
                 <div class="perf-video-list" id="perfBottomList"></div>
               </div>
@@ -363,7 +358,7 @@
         <section class="client-view" id="clientRequestsView" data-client-view="requests">
           <div class="page-header">
             <div>
-              <h2 class="page-title">Requests</h2>
+              <h2 class="page-title">Demandes</h2>
               <p class="page-desc">Soumets une nouvelle demande de miniature et suis l'avancement.</p>
             </div>
             <div class="page-header-actions">
@@ -423,8 +418,8 @@
         <section class="client-view" id="clientBillingView" data-client-view="billing">
           <div class="page-header">
             <div>
-              <h2 class="page-title">Billing</h2>
-              <p class="page-desc">Ton abonnement et l'historique de tes transactions.</p>
+              <h2 class="page-title">Facturation</h2>
+              <p class="page-desc">Ton abonnement et l'historique de tes factures.</p>
             </div>
           </div>
 
@@ -441,27 +436,18 @@
             </div>
           </div>
 
-          <!-- Transactions -->
+          <!-- Factures Stripe -->
           <div class="ov-card">
-            <div class="ov-card-header"><h3>Transactions</h3></div>
+            <div class="ov-card-header"><h3>Factures</h3></div>
             <div class="ov-table-wrap">
               <table class="yt-table">
                 <thead>
-                  <tr><th>Date</th><th>Description</th><th>Montant</th><th>Status</th></tr>
+                  <tr><th>Date</th><th>Description</th><th>Montant</th><th>Statut</th><th></th></tr>
                 </thead>
                 <tbody id="billingTableBody">
-                  <tr><td colspan="4" class="empty">Aucune transaction pour le moment.</td></tr>
+                  <tr><td colspan="5" class="empty" id="billingEmpty">Chargement des factures...</td></tr>
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <!-- Payment info -->
-          <div class="ov-card">
-            <div class="ov-card-header"><h3>Moyen de paiement</h3></div>
-            <div class="bill-payment-empty">
-              <p>Aucun moyen de paiement enregistré.</p>
-              <a href="mailto:contact@miniads.fr?subject=Payment+Method" class="btn-outline">Ajouter</a>
             </div>
           </div>
         </section>

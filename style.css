@@ -1060,6 +1060,24 @@ body.admin-mode .foot {
   font-size: 0.88rem;
 }
 
+.bill-pdf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.bill-pdf-link:hover {
+  background: var(--accent-strong);
+}
+
 @media (max-width: 768px) {
   .bill-plan-card {
     flex-direction: column;

@@ -565,5 +565,66 @@ app.post("/api/mistral/analyze", async (req, res) => {
   }
 });
 
+// --- Stripe: Factures client ---
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+
+app.get("/api/stripe/invoices", async (req, res) => {
+  try {
+    if (!STRIPE_SECRET_KEY) {
+      return res.status(500).json({ error: "Clé Stripe non configurée sur le serveur." });
+    }
+
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).json({ error: "Paramètre email requis." });
+    }
+
+    // 1) Chercher le customer Stripe par email
+    const custSearchRes = await fetch(
+      `https://api.stripe.com/v1/customers/search?query=email:'${encodeURIComponent(email)}'`,
+      { headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` } }
+    );
+    const custData = await custSearchRes.json();
+    if (!custSearchRes.ok) {
+      throw new Error(custData.error?.message || "Erreur recherche client Stripe");
+    }
+
+    const customer = custData.data?.[0];
+    if (!customer) {
+      return res.json({ invoices: [], customer: null });
+    }
+
+    // 2) Récupérer les factures du customer
+    const invRes = await fetch(
+      `https://api.stripe.com/v1/invoices?customer=${customer.id}&limit=20&status=paid`,
+      { headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` } }
+    );
+    const invData = await invRes.json();
+    if (!invRes.ok) {
+      throw new Error(invData.error?.message || "Erreur récupération factures Stripe");
+    }
+
+    const invoices = (invData.data || []).map(inv => ({
+      id: inv.id,
+      number: inv.number,
+      date: inv.created,
+      amount: inv.amount_paid / 100,
+      currency: inv.currency,
+      status: inv.status,
+      pdf: inv.invoice_pdf,
+      description: inv.lines?.data?.[0]?.description || inv.description || "Miniads"
+    }));
+
+    res.json({
+      customer: { id: customer.id, name: customer.name, email: customer.email },
+      invoices
+    });
+
+  } catch (e) {
+    console.error("Erreur Stripe /invoices:", e.message);
+    res.status(500).json({ error: "Erreur lors de la récupération des factures." });
+  }
+});
+
 // --- Exports ---
 export default app;
