@@ -325,23 +325,25 @@ function openInYoutubeFeed(file = {}, triggerBtn) {
   const thumb = getMiniatureThumbnail(file.thumbnailLink);
   const title = truncateText(file.name || "Votre miniature", 90);
   const channel = getFolderLabel(file);
-  const params = new URLSearchParams({
-    thumb,
-    title,
-    channel
-  });
+  const params = new URLSearchParams({ thumb, title, channel });
 
-  const url = `./miniads-claude/preview.html?${params.toString()}`;
+  // Navigate to the Preview tab and load the thumbnail in the iframe
+  if (typeof setClientView === "function") {
+    setClientView("preview");
+  }
+
+  const iframe = document.getElementById("previewFrame");
+  if (iframe) {
+    iframe.src = `./miniads-claude/preview.html?${params.toString()}`;
+  }
+
   if (triggerBtn) {
     triggerBtn.disabled = true;
-    triggerBtn.textContent = "Ouverture…";
-  }
-  window.open(url, "_blank", "noopener,noreferrer");
-  if (triggerBtn) {
+    triggerBtn.textContent = "Chargement…";
     setTimeout(() => {
       triggerBtn.disabled = false;
-      triggerBtn.textContent = "Voir sur le feed YouTube";
-    }, 800);
+      triggerBtn.textContent = "Voir sur le feed";
+    }, 1000);
   }
 }
 
