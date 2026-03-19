@@ -185,7 +185,39 @@ function renderFilesGrid(files = [], { container = miniaturesGrid, emptyLabel } 
     dateMeta.innerHTML = `<span class="mini-card-meta-label">Modifié</span><span class="mini-card-meta-value">${formattedDate}</span>`;
 
     meta.append(folderMeta, dateMeta);
-    body.append(title, meta);
+
+    // Action buttons
+    const actions = document.createElement("div");
+    actions.className = "mini-card-actions";
+
+    const feedBtn = document.createElement("button");
+    feedBtn.type = "button";
+    feedBtn.className = "mini-card-btn mini-card-btn-accent";
+    feedBtn.textContent = "Voir sur le feed";
+    feedBtn.addEventListener("click", () => openInYoutubeFeed(file, feedBtn));
+    actions.appendChild(feedBtn);
+
+    if (file.webViewLink) {
+      const previewLink = document.createElement("a");
+      previewLink.className = "mini-card-btn mini-card-btn-primary";
+      previewLink.href = file.webViewLink;
+      previewLink.target = "_blank";
+      previewLink.rel = "noopener";
+      previewLink.textContent = "Aperçu";
+      actions.appendChild(previewLink);
+    }
+
+    if (file.webContentLink) {
+      const downloadLink = document.createElement("a");
+      downloadLink.className = "mini-card-btn";
+      downloadLink.href = file.webContentLink;
+      downloadLink.target = "_blank";
+      downloadLink.rel = "noopener";
+      downloadLink.textContent = "Télécharger";
+      actions.appendChild(downloadLink);
+    }
+
+    body.append(title, meta, actions);
     card.append(thumbWrapper, body);
     fragment.appendChild(card);
   });
