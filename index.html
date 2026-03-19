@@ -161,181 +161,67 @@
             <div class="channel-header card yt-dark-card">
               <img id="channelAvatar" src="" alt="Avatar" class="channel-avatar">
               <div class="channel-info">
-                <h3 id="channelTitle">Nom de la chaîne</h3>
-                <div class="channel-meta">
-                  <span id="channelCustomUrl">@handle</span>
-                  <span class="separator">•</span>
-                  <span id="channelSubscribers">0 abonnés</span>
-                </div>
+                <h3 id="channelTitle">Nom de la chaine</h3>
                 <p id="channelDescription" class="channel-desc"></p>
               </div>
             </div>
 
-            <!-- KPI Grid -->
+            <!-- 6 KPI Cards -->
             <div class="yt-kpi-grid">
-              <article class="yt-kpi-card">
-                <div class="yt-kpi-header">
-                  <span class="yt-kpi-label">Abonnés</span>
-                  <span class="yt-kpi-icon yt-kpi-icon-red">👥</span>
-                </div>
-                <div class="yt-kpi-value" id="statsSubs">-</div>
-                <div class="yt-kpi-trend" id="statSubsTrend">-</div>
-              </article>
-              <article class="yt-kpi-card">
-                <div class="yt-kpi-header">
-                  <span class="yt-kpi-label">Vues totales</span>
-                  <span class="yt-kpi-icon yt-kpi-icon-green">👁️</span>
-                </div>
-                <div class="yt-kpi-value" id="statsViews">-</div>
-                <div class="yt-kpi-trend" id="statsViewsTrend">-</div>
-              </article>
-              <article class="yt-kpi-card">
-                <div class="yt-kpi-header">
-                  <span class="yt-kpi-label">Vidéos</span>
-                  <span class="yt-kpi-icon yt-kpi-icon-teal">📹</span>
-                </div>
-                <div class="yt-kpi-value" id="statsVideos">-</div>
-                <div class="yt-kpi-trend" id="statsVideosTrend">-</div>
-              </article>
-              <article class="yt-kpi-card">
-                <div class="yt-kpi-header">
-                  <span class="yt-kpi-label">Engagement global</span>
-                  <span class="yt-kpi-icon yt-kpi-icon-blue">📈</span>
-                </div>
-                <div class="yt-kpi-value" id="statsAvgEngagement">-</div>
-                <div class="yt-kpi-trend" id="statsTrendDirection">-</div>
-              </article>
+              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsSubs">-</div><div class="yt-kpi-label">Abonnes</div></article>
+              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsVideosLong">-</div><div class="yt-kpi-label">Videos (hors shorts)</div></article>
+              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsTotalViews">-</div><div class="yt-kpi-label">Vues totales</div></article>
+              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsAvgViews">-</div><div class="yt-kpi-label">Vues moyennes</div></article>
+              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsEngagement">-</div><div class="yt-kpi-label">Engagement</div></article>
+              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsMedianViews">-</div><div class="yt-kpi-label">Vues medianes</div></article>
             </div>
 
-            <!-- Format Comparison -->
-            <div class="yt-format-comparison yt-dark-card">
-              <h3>Comparaison des formats</h3>
-              <div class="yt-format-grid">
-                <div class="yt-format-card yt-format-shorts">
-                  <h4>Shorts</h4>
-                  <p class="yt-format-desc">Vidéos courtes (≤60s)</p>
-                  <div class="yt-format-stats">
-                    <div class="yt-format-stat">
-                      <span class="yt-format-value" id="shortsCount">0</span>
-                      <span class="yt-format-label">vidéos</span>
-                    </div>
-                    <div class="yt-format-stat">
-                      <span class="yt-format-value" id="shortsEngagement">0%</span>
-                      <span class="yt-format-label">engagement</span>
-                    </div>
-                    <div class="yt-format-stat">
-                      <span class="yt-format-value" id="shortsAvgViews">0</span>
-                      <span class="yt-format-label">vues moy.</span>
-                    </div>
-                  </div>
+            <!-- Tables: Top 10 + Outliers -->
+            <div class="yt-tables-row">
+              <div class="yt-table-card">
+                <h3>Top 10 all-time</h3>
+                <div class="yt-table-scroll">
+                  <table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Duree</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytTopTable"></tbody></table>
                 </div>
-                <div class="yt-format-card yt-format-long">
-                  <h4>Vidéos longues</h4>
-                  <p class="yt-format-desc">Contenu standard (&gt;60s)</p>
-                  <div class="yt-format-stats">
-                    <div class="yt-format-stat">
-                      <span class="yt-format-value" id="longCount">0</span>
-                      <span class="yt-format-label">vidéos</span>
-                    </div>
-                    <div class="yt-format-stat">
-                      <span class="yt-format-value" id="longEngagement">0%</span>
-                      <span class="yt-format-label">engagement</span>
-                    </div>
-                    <div class="yt-format-stat">
-                      <span class="yt-format-value" id="longAvgViews">0</span>
-                      <span class="yt-format-label">vues moy.</span>
-                    </div>
-                  </div>
+              </div>
+              <div class="yt-table-card">
+                <h3>Meilleurs outliers</h3>
+                <div class="yt-table-scroll">
+                  <table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Duree</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytOutliersTable"></tbody></table>
                 </div>
               </div>
             </div>
 
-            <!-- Insights Cards -->
-            <div class="yt-insights-grid">
-              <div class="yt-insight-card yt-dark-card">
-                <h4>Durée optimale</h4>
-                <div class="yt-insight-value" id="insightDuration">-</div>
-                <p class="yt-insight-desc" id="insightDurationDesc">-</p>
-              </div>
-              <div class="yt-insight-card yt-dark-card">
-                <h4>Meilleur horaire</h4>
-                <div class="yt-insight-value" id="insightTime">-</div>
-                <p class="yt-insight-desc" id="insightTimeDesc">-</p>
-              </div>
-              <div class="yt-insight-card yt-dark-card">
-                <h4>Meilleur jour</h4>
-                <div class="yt-insight-value" id="insightDay">-</div>
-                <p class="yt-insight-desc" id="insightDayDesc">-</p>
-              </div>
-              <div class="yt-insight-card yt-dark-card" id="trendCard">
-                <h4>Tendance</h4>
-                <div class="yt-insight-value" id="insightTrend">-</div>
-                <p class="yt-insight-desc" id="insightTrendDesc">-</p>
-              </div>
+            <!-- Bar Chart: Views per video -->
+            <div class="yt-chart-card">
+              <h3>Vues par video (Top 12)</h3>
+              <div class="yt-chart-container"><canvas id="ytBarChart"></canvas></div>
             </div>
 
-            <!-- Monthly Performance Chart -->
-            <div class="yt-chart-card yt-dark-card">
+            <!-- Time Series Chart -->
+            <div class="yt-chart-card">
               <div class="yt-chart-header">
-                <div>
-                  <h3>Performance mensuelle</h3>
-                  <p class="yt-chart-subtitle">Évolution sur les derniers mois</p>
-                </div>
-                <div class="yt-chart-legend">
-                  <span class="yt-legend-item yt-legend-views">● Vues</span>
-                  <span class="yt-legend-item yt-legend-engagement">● Engagement</span>
-                </div>
-              </div>
-              <div class="yt-chart-container">
-                <canvas id="ytPerformanceChart"></canvas>
-              </div>
-            </div>
-
-            <!-- Top Videos Tabs -->
-            <div class="yt-top-videos yt-dark-card">
-              <div class="yt-top-tabs">
-                <button class="yt-tab-btn active" data-tab="shorts">Top Shorts</button>
-                <button class="yt-tab-btn" data-tab="long">Top Vidéos longues</button>
-              </div>
-              <div class="yt-tab-content" id="tabShorts">
-                <div class="yt-videos-list" id="topShortsList">
-                  <!-- Dynamically filled -->
+                <h3>Evolution temporelle</h3>
+                <div class="yt-chart-controls">
+                  <div class="yt-control-group" id="ytRangeGroup">
+                    <button class="yt-control-btn" data-range="90">3 mois</button>
+                    <button class="yt-control-btn" data-range="180">6 mois</button>
+                    <button class="yt-control-btn" data-range="365">1 an</button>
+                    <button class="yt-control-btn active" data-range="0">Tout</button>
+                  </div>
+                  <div class="yt-control-group" id="ytGranGroup">
+                    <button class="yt-control-btn" data-gran="day">Jour</button>
+                    <button class="yt-control-btn" data-gran="week">Semaine</button>
+                    <button class="yt-control-btn active" data-gran="month">Mois</button>
+                  </div>
+                  <div class="yt-control-group" id="ytMetricGroup">
+                    <button class="yt-control-btn active" data-metric="views">Vues</button>
+                    <button class="yt-control-btn active" data-metric="likes">Likes</button>
+                    <button class="yt-control-btn" data-metric="comments">Commentaires</button>
+                  </div>
                 </div>
               </div>
-              <div class="yt-tab-content hidden" id="tabLong">
-                <div class="yt-videos-list" id="topLongList">
-                  <!-- Dynamically filled -->
-                </div>
-              </div>
-            </div>
-
-            <div class="ai-analysis-section card yt-dark-card">
-              <div class="ai-header">
-                <span class="ai-badge">Mistral AI</span>
-                <h3>Analyse approfondie</h3>
-              </div>
-              <div id="aiContent" class="ai-content">
-                <div class="ai-loading">
-                  <div class="spinner"></div>
-                  <p>Analyse approfondie en cours...</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- AI Chat -->
-            <div class="yt-ai-chat yt-dark-card" id="aiChatSection">
-              <div class="yt-chat-header">
-                <h3>Posez une question</h3>
-                <p class="yt-chat-subtitle">Demandez des conseils personnalisés sur votre chaîne</p>
-              </div>
-              <div class="yt-chat-messages" id="chatMessages">
-                <!-- Messages will appear here -->
-              </div>
-              <form class="yt-chat-form" id="aiChatForm">
-                <input type="text" id="chatInput" placeholder="Ex: Comment améliorer mon taux d'engagement ?"
-                  required />
-                <button type="submit" class="btn btn-primary" id="chatSubmitBtn">Envoyer</button>
-              </form>
+              <div class="yt-chart-container"><canvas id="ytTimeSeriesChart"></canvas></div>
             </div>
           </div>
         </section>

@@ -3840,16 +3840,102 @@ if (isAdminRoute) {
   }
 }
 
-// --- YouTube & Mistral AI Logic ---
+// --- YouTube Analysis (LUS Style) ---
 
-let ytPerformanceChart = null;
+let ytBarChart = null;
+let ytTimeSeriesChart = null;
+let ytAllVideos = [];
 
 function formatCount(num) {
-  if (!num) return "0";
+  if (!num && num !== 0) return "0";
   const n = parseInt(num, 10);
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
-  return n.toString();
+  return n.toLocaleString("fr-FR");
+}
+
+function formatDateShort(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function buildTableRows(videos, avgViews) {
+  return videos.map((v, i) => {
+    const ratio = avgViews > 0 ? (v.views / avgViews).toFixed(1) : "0";
+    return `<tr>
+      <td>${i + 1}</td>
+      <td class="yt-table-title-cell"><img src="${v.thumbnail}" class="yt-table-thumb"><span>${v.title}</span></td>
+      <td>${formatCount(v.views)}</td>
+      <td>${formatCount(v.likes)}</td>
+      <td>${v.durationFormatted}</td>
+      <td>${formatDateShort(v.publishedAt)}</td>
+      <td><span class="yt-ratio-badge">${ratio}x</span></td>
+    </tr>`;
+  }).join("");
+}
+
+function renderBarChart(videos) {
+  const ctx = document.getElementById("ytBarChart");
+  if (!ctx) return;
+  if (ytBarChart) ytBarChart.destroy();
+  const top12 = [...videos].sort((a, b) => b.views - a.views).slice(0, 12);
+  ytBarChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: top12.map(v => v.title.length > 30 ? v.title.slice(0, 30) + "..." : v.title),
+      datasets: [{ label: "Vues", data: top12.map(v => v.views), backgroundColor: "rgba(200, 220, 80, 0.7)", borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => " " + formatCount(c.raw) + " vues" } } },
+      scales: { x: { ticks: { callback: v => formatCount(v) }, grid: { color: "rgba(0,0,0,0.04)" } }, y: { ticks: { font: { size: 11 } } } }
+    }
+  });
+}
+
+function renderTimeSeries(videos, range, gran, metrics) {
+  const ctx = document.getElementById("ytTimeSeriesChart");
+  if (!ctx) return;
+  if (ytTimeSeriesChart) ytTimeSeriesChart.destroy();
+
+  let filtered = [...videos].sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
+  if (range > 0) {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - range);
+    filtered = filtered.filter(v => new Date(v.publishedAt) >= cutoff);
+  }
+
+  const buckets = {};
+  filtered.forEach(v => {
+    const d = new Date(v.publishedAt);
+    let key;
+    if (gran === "day") key = d.toISOString().slice(0, 10);
+    else if (gran === "week") { const w = new Date(d); w.setDate(w.getDate() - w.getDay()); key = w.toISOString().slice(0, 10); }
+    else { key = d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }); }
+    if (!buckets[key]) buckets[key] = { views: 0, likes: 0, comments: 0 };
+    buckets[key].views += v.views;
+    buckets[key].likes += v.likes;
+    buckets[key].comments += v.comments;
+  });
+
+  const labels = Object.keys(buckets);
+  const colors = { views: "#8bc34a", likes: "#2196f3", comments: "#ff9800" };
+  const datasets = metrics.map(m => ({
+    label: m === "views" ? "Vues" : m === "likes" ? "Likes" : "Commentaires",
+    data: labels.map(k => buckets[k][m]),
+    borderColor: colors[m], backgroundColor: colors[m] + "22", fill: true, tension: 0.3, pointRadius: 3
+  }));
+
+  ytTimeSeriesChart = new Chart(ctx, {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { display: true, position: "top" }, tooltip: { callbacks: { label: c => " " + c.dataset.label + ": " + formatCount(c.raw) } } },
+      scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { callback: v => formatCount(v) }, grid: { color: "rgba(0,0,0,0.04)" } } }
+    }
+  });
 }
 
 function initYoutubeAnalysis() {
@@ -3861,181 +3947,108 @@ function initYoutubeAnalysis() {
 
   if (!form) return;
 
-  // Auto-fill and analyze if param exists
   const autoUrl = getParam("youtube");
   if (autoUrl) {
     input.value = autoUrl;
-    // Slight delay to ensure UI is ready
-    setTimeout(() => {
-      const submitEvent = new Event("submit");
-      form.dispatchEvent(submitEvent);
-    }, 500);
+    setTimeout(() => form.dispatchEvent(new Event("submit")), 500);
   }
 
-  // Setup tab switching
-  document.querySelectorAll(".yt-tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".yt-tab-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
+  // Chart controls
+  let currentRange = 0, currentGran = "month", currentMetrics = ["views", "likes"];
 
-      const tab = btn.dataset.tab;
-      document.getElementById("tabShorts").classList.toggle("hidden", tab !== "shorts");
-      document.getElementById("tabLong").classList.toggle("hidden", tab !== "long");
+  function setupControls() {
+    document.querySelectorAll("#ytRangeGroup .yt-control-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#ytRangeGroup .yt-control-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentRange = parseInt(btn.dataset.range);
+        renderTimeSeries(ytAllVideos, currentRange, currentGran, currentMetrics);
+      });
     });
-  });
+    document.querySelectorAll("#ytGranGroup .yt-control-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#ytGranGroup .yt-control-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentGran = btn.dataset.gran;
+        renderTimeSeries(ytAllVideos, currentRange, currentGran, currentMetrics);
+      });
+    });
+    document.querySelectorAll("#ytMetricGroup .yt-control-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("active");
+        currentMetrics = Array.from(document.querySelectorAll("#ytMetricGroup .yt-control-btn.active")).map(b => b.dataset.metric);
+        if (currentMetrics.length === 0) { btn.classList.add("active"); currentMetrics = [btn.dataset.metric]; }
+        renderTimeSeries(ytAllVideos, currentRange, currentGran, currentMetrics);
+      });
+    });
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const url = input.value.trim();
     if (!url) return;
 
-    // Reset UI
     resultsDiv.classList.add("hidden");
     errorMsg.classList.add("hidden");
-    errorMsg.textContent = "";
     analyzeBtn.disabled = true;
-    const originalBtnContent = analyzeBtn.innerHTML;
-    analyzeBtn.innerHTML = `<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span> Analyse...`;
+    const originalBtn = analyzeBtn.innerHTML;
+    analyzeBtn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span> Analyse...';
 
     try {
-      // 1. Get YouTube Stats
       const statsRes = await fetch("/api/youtube/stats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url })
       });
-
       const data = await statsRes.json();
-      if (!statsRes.ok) throw new Error(data.error || "Erreur lors de l'analyse YouTube");
+      if (!statsRes.ok) throw new Error(data.error || "Erreur lors de l'analyse");
 
-      const { channel, analytics, topShorts, topLongVideos, monthlyPerformance, insights } = data;
+      const { channel, kpis, allVideos } = data;
+      ytAllVideos = allVideos;
 
-      // Update Channel Header
+      // Channel header
       document.getElementById("channelAvatar").src = channel.thumbnail;
       document.getElementById("channelTitle").textContent = channel.title;
-      document.getElementById("channelCustomUrl").textContent = channel.customUrl ? `@${channel.customUrl}` : "";
-      document.getElementById("channelSubscribers").textContent = `${formatCount(channel.subscriberCount)} abonnés`;
-      document.getElementById("channelDescription").textContent = channel.description?.slice(0, 150) || "Aucune description.";
+      document.getElementById("channelDescription").textContent = channel.description?.slice(0, 200) || "";
 
-      // Update KPIs
-      document.getElementById("statsSubs").textContent = formatCount(channel.subscriberCount);
-      document.getElementById("statsViews").textContent = formatCount(channel.viewCount);
-      document.getElementById("statsVideos").textContent = channel.videoCount;
-      document.getElementById("statsAvgEngagement").textContent = analytics.global.avgEngagement + "%";
+      // KPIs
+      document.getElementById("statsSubs").textContent = formatCount(kpis.subscribers);
+      document.getElementById("statsVideosLong").textContent = kpis.videoCountLong;
+      document.getElementById("statsTotalViews").textContent = formatCount(kpis.totalViews);
+      document.getElementById("statsAvgViews").textContent = formatCount(kpis.avgViews);
+      document.getElementById("statsEngagement").textContent = kpis.avgEngagement + "%";
+      document.getElementById("statsMedianViews").textContent = formatCount(kpis.medianViews);
 
-      // Trend indicator
-      const trendEl = document.getElementById("statsTrendDirection");
-      if (insights.trend.direction === "up") {
-        trendEl.textContent = `↑ +${insights.trend.percentage}%`;
-        trendEl.className = "yt-kpi-trend yt-trend-up";
-      } else {
-        trendEl.textContent = `↓ ${insights.trend.percentage}%`;
-        trendEl.className = "yt-kpi-trend yt-trend-down";
-      }
+      // Top 10 by views
+      const top10 = [...allVideos].sort((a, b) => b.views - a.views).slice(0, 10);
+      document.getElementById("ytTopTable").innerHTML = buildTableRows(top10, kpis.avgViews);
 
-      // Format Comparison
-      document.getElementById("shortsCount").textContent = analytics.shorts.count;
-      document.getElementById("shortsEngagement").textContent = analytics.shorts.avgEngagement + "%";
-      document.getElementById("shortsAvgViews").textContent = formatCount(analytics.shorts.avgViews);
+      // Outliers by ratio
+      const withRatio = allVideos.map(v => ({ ...v, ratio: kpis.avgViews > 0 ? v.views / kpis.avgViews : 0 }));
+      const outliers = withRatio.sort((a, b) => b.ratio - a.ratio).slice(0, 10);
+      document.getElementById("ytOutliersTable").innerHTML = buildTableRows(outliers, kpis.avgViews);
 
-      document.getElementById("longCount").textContent = analytics.longVideos.count;
-      document.getElementById("longEngagement").textContent = analytics.longVideos.avgEngagement + "%";
-      document.getElementById("longAvgViews").textContent = formatCount(analytics.longVideos.avgViews);
-
-      // Insights Cards
-      if (insights.optimalDuration) {
-        document.getElementById("insightDuration").textContent = insights.optimalDuration.label;
-        document.getElementById("insightDurationDesc").textContent = `${insights.optimalDuration.avgEngagement}% engagement`;
-      }
-
-      if (insights.bestPostingTime) {
-        document.getElementById("insightTime").textContent = insights.bestPostingTime.hourFormatted;
-        document.getElementById("insightTimeDesc").textContent = `${insights.bestPostingTime.avgEngagement}% engagement`;
-      }
-
-      if (insights.bestPostingDay) {
-        document.getElementById("insightDay").textContent = insights.bestPostingDay.day;
-        document.getElementById("insightDayDesc").textContent = `${insights.bestPostingDay.avgEngagement}% engagement`;
-      }
-
-      // Trend Card
-      const trendCard = document.getElementById("trendCard");
-      if (trendCard) {
-        trendCard.classList.remove("trend-up", "trend-down");
-        trendCard.classList.add(insights.trend.direction === "up" ? "trend-up" : "trend-down");
-      }
-      document.getElementById("insightTrend").textContent = insights.trend.direction === "up" ? "En hausse" : "En baisse";
-      document.getElementById("insightTrendDesc").textContent = `${insights.trend.percentage > 0 ? "+" : ""}${insights.trend.percentage}% vs avant`;
-
-      // Render Top Shorts
-      const topShortsList = document.getElementById("topShortsList");
-      topShortsList.innerHTML = topShorts.length > 0
-        ? topShorts.map(video => renderVideoCard(video)).join("")
-        : '<p class="yt-no-data">Aucun Short trouvé</p>';
-
-      // Render Top Long Videos
-      const topLongList = document.getElementById("topLongList");
-      topLongList.innerHTML = topLongVideos.length > 0
-        ? topLongVideos.map(video => renderVideoCard(video)).join("")
-        : '<p class="yt-no-data">Aucune vidéo longue trouvée</p>';
-
-      // Render Monthly Chart
-      renderMonthlyChart(monthlyPerformance);
+      // Charts
+      renderBarChart(allVideos);
+      setupControls();
+      renderTimeSeries(allVideos, currentRange, currentGran, currentMetrics);
 
       resultsDiv.classList.remove("hidden");
 
-      // 2. Get AI Insights
-      const aiContentDiv = document.getElementById("aiContent");
-      aiContentDiv.innerHTML = `
-        <div class="ai-loading">
-            <div class="spinner"></div>
-            <p>Analyse approfondie en cours...</p>
-        </div>
-      `;
-
-      const aiRes = await fetch("/api/mistral/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stats: {
-            ...channel,
-            shortsCount: analytics.shorts.count,
-            shortsEngagement: analytics.shorts.avgEngagement,
-            shortsAvgViews: analytics.shorts.avgViews,
-            longCount: analytics.longVideos.count,
-            longEngagement: analytics.longVideos.avgEngagement,
-            longAvgViews: analytics.longVideos.avgViews,
-          },
-          channelName: channel.title,
-          insights,
-          topShorts: topShorts.slice(0, 3),
-          topLongVideos: topLongVideos.slice(0, 3),
-          recentVideos: data.recentVideos ? data.recentVideos.slice(0, 10) : []
-        }),
-      });
-
-      const aiData = await aiRes.json();
-      if (!aiRes.ok) throw new Error(aiData.error || "Erreur lors de l'analyse IA");
-
-      aiContentDiv.innerHTML = aiData.analysis;
-
-      // Store context for chat
-      window.ytChannelContext = {
-        title: channel.title,
-        subscriberCount: channel.subscriberCount,
-        viewCount: channel.viewCount,
-        videoCount: channel.videoCount,
-        shortsCount: analytics.shorts.count,
-        shortsEngagement: analytics.shorts.avgEngagement,
-        longCount: analytics.longVideos.count,
-        longEngagement: analytics.longVideos.avgEngagement,
-        optimalDuration: insights.optimalDuration?.label,
-        bestPostingTime: insights.bestPostingTime?.hourFormatted,
-        trend: insights.trend?.direction === 'up' ? `+${insights.trend.percentage}%` : `${insights.trend.percentage}%`
-      };
-
-      // Init chat
-      initAiChat();
+      // AI analysis
+      try {
+        const aiRes = await fetch("/api/mistral/analyze", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            stats: { ...channel, videoCountLong: kpis.videoCountLong, avgViews: kpis.avgViews, avgEngagement: kpis.avgEngagement, medianViews: kpis.medianViews },
+            channelName: channel.title,
+            topVideos: top10.slice(0, 5).map(v => v.title),
+          })
+        });
+        const aiData = await aiRes.json();
+        if (aiRes.ok && aiData.analysis) {
+          const aiDiv = document.getElementById("aiContent");
+          if (aiDiv) aiDiv.innerHTML = aiData.analysis;
+        }
+      } catch(e) { console.warn("AI analysis failed:", e); }
 
     } catch (err) {
       console.error(err);
@@ -4043,213 +4056,8 @@ function initYoutubeAnalysis() {
       errorMsg.classList.remove("hidden");
     } finally {
       analyzeBtn.disabled = false;
-      analyzeBtn.innerHTML = originalBtnContent || `<span>Analyser</span>`;
+      analyzeBtn.innerHTML = originalBtn || '<span>Analyser</span>';
     }
-  });
-}
-
-function initAiChat() {
-  const chatForm = document.getElementById("aiChatForm");
-  const chatInput = document.getElementById("chatInput");
-  const chatMessages = document.getElementById("chatMessages");
-  const chatSubmitBtn = document.getElementById("chatSubmitBtn");
-
-  if (!chatForm) return;
-
-  chatForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const question = chatInput.value.trim();
-    if (!question) return;
-
-    // Add user message
-    chatMessages.innerHTML += `<div class="yt-chat-message user"><strong>Vous:</strong> ${question}</div>`;
-    chatInput.value = "";
-    chatSubmitBtn.disabled = true;
-    chatSubmitBtn.textContent = "...";
-
-    // Scroll to bottom
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    try {
-      const res = await fetch("/api/mistral/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question,
-          channelContext: window.ytChannelContext || null
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      chatMessages.innerHTML += `<div class="yt-chat-message ai">${data.answer}</div>`;
-    } catch (err) {
-      chatMessages.innerHTML += `<div class="yt-chat-message ai" style="color: #ef4444;">Erreur: ${err.message}</div>`;
-    } finally {
-      chatSubmitBtn.disabled = false;
-      chatSubmitBtn.textContent = "Envoyer";
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-  });
-}
-
-function renderVideoCard(video) {
-  return `
-    <div class="yt-video-item">
-      <img src="${video.thumbnail}" alt="${video.title}" class="yt-video-thumb" />
-      <div class="yt-video-info">
-        <div class="yt-video-title">${video.title}</div>
-        <div class="yt-video-stats">
-          <span>${formatCount(video.views)} vues</span>
-          <span>${formatCount(video.likes)} likes</span>
-          <span>${video.durationFormatted}</span>
-          <span class="yt-video-engagement">${video.engagementRate}% engagement</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderMonthlyChart(monthlyData) {
-  const ctx = document.getElementById("ytPerformanceChart");
-  if (!ctx) return;
-
-  if (ytPerformanceChart) {
-    ytPerformanceChart.destroy();
-  }
-
-  const labels = monthlyData.map(m => m.month);
-  const viewsData = monthlyData.map(m => m.totalViews);
-  const engagementData = monthlyData.map(m => m.avgEngagement);
-
-  ytPerformanceChart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Vues totales",
-          data: viewsData,
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59, 130, 246, 0.1)",
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: "#3b82f6",
-          pointBorderColor: "#fff",
-          pointBorderWidth: 2,
-          yAxisID: "y",
-        },
-        {
-          label: "Engagement moyen",
-          data: engagementData,
-          borderColor: "#f59a2d",
-          backgroundColor: "transparent",
-          borderWidth: 2,
-          borderDash: [5, 5],
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: "#f59a2d",
-          pointBorderColor: "#fff",
-          pointBorderWidth: 2,
-          yAxisID: "y1",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: "index",
-        intersect: false,
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: "top",
-          align: "end",
-          labels: {
-            boxWidth: 12,
-            boxHeight: 12,
-            padding: 16,
-            font: { size: 12 },
-            color: "#64748b",
-          },
-        },
-        tooltip: {
-          backgroundColor: "#fff",
-          titleColor: "#111",
-          bodyColor: "#666",
-          borderColor: "#e5e7eb",
-          borderWidth: 1,
-          padding: 12,
-          cornerRadius: 8,
-          displayColors: true,
-          callbacks: {
-            label: function (context) {
-              if (context.datasetIndex === 0) {
-                return ` Vues: ${formatCount(context.raw)}`;
-              }
-              return ` Engagement: ${context.raw}%`;
-            }
-          }
-        },
-      },
-      scales: {
-        x: {
-          grid: {
-            display: false,
-          },
-          ticks: {
-            color: "#94a3b8",
-            font: { size: 11 },
-          },
-        },
-        y: {
-          type: "linear",
-          display: true,
-          position: "left",
-          grid: {
-            color: "rgba(0, 0, 0, 0.04)",
-          },
-          ticks: {
-            color: "#3b82f6",
-            font: { size: 11 },
-            callback: function (value) {
-              return formatCount(value);
-            },
-          },
-          title: {
-            display: true,
-            text: "Vues",
-            color: "#3b82f6",
-            font: { size: 11, weight: 500 },
-          },
-        },
-        y1: {
-          type: "linear",
-          display: true,
-          position: "right",
-          grid: {
-            drawOnChartArea: false,
-          },
-          ticks: {
-            color: "#f59a2d",
-            font: { size: 11 },
-            callback: function (value) {
-              return value + "%";
-            },
-          },
-          title: {
-            display: true,
-            text: "Engagement",
-            color: "#f59a2d",
-            font: { size: 11, weight: 500 },
-          },
-        },
-      },
-    },
   });
 }
 
