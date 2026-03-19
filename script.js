@@ -3420,11 +3420,14 @@ function setClientContext(label = "") {
     heroDateEl.textContent = formatFriendlyDate(new Date());
   }
   if (clientBadge) {
+    const nameEl = document.getElementById("topbarName");
+    const avatarEl = document.getElementById("topbarAvatar");
     if (displayName) {
-      clientBadge.textContent = displayName;
+      if (nameEl) { nameEl.textContent = displayName; nameEl.classList.remove("hidden"); }
+      if (avatarEl) { avatarEl.textContent = displayName.charAt(0).toUpperCase(); }
       clientBadge.classList.remove("hidden");
     } else {
-      clientBadge.textContent = "";
+      if (nameEl) { nameEl.textContent = ""; nameEl.classList.add("hidden"); }
       clientBadge.classList.add("hidden");
     }
   }

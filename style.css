@@ -791,105 +791,120 @@ body.admin-mode .foot {
   font-weight: 600;
 }
 
-/* ===== Dashboard Hero ===== */
-.dash-hero {
-  padding: 32px 36px;
-  border-radius: var(--radius-xl);
-  background: var(--text-primary);
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
-}
-
-.dash-hero::after {
-  content: '';
-  position: absolute;
-  top: -60%;
-  right: -15%;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(255, 153, 28, 0.18) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.dash-hero-content {
-  position: relative;
-  z-index: 1;
-}
-
-.dash-hero-greeting {
-  font-size: 0.88rem;
-  color: rgba(255,255,255,0.55);
-  margin-bottom: 6px;
-}
-
-.dash-hero-title {
-  font-family: var(--font-display);
-  font-size: 1.65rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin-bottom: 8px;
-}
-
-.dash-hero-desc {
-  font-size: 0.9rem;
-  color: rgba(255,255,255,0.5);
-  max-width: 440px;
-  line-height: 1.5;
-}
-
-/* ===== Dashboard Stats ===== */
-.dash-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.dash-stat {
-  background: #ffffff;
-  border: 1px solid var(--border-divider);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
+/* ===== Page Header ===== */
+.page-header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: box-shadow var(--transition), transform var(--transition);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.dash-stat:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.dash-stat-value {
+.page-title {
   font-family: var(--font-display);
-  font-size: 1.65rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.03em;
-  line-height: 1.1;
+  margin: 0;
 }
 
-.dash-stat-label {
-  font-size: 0.78rem;
-  font-weight: 500;
+.page-desc {
+  font-size: 0.92rem;
   color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  margin: 4px 0 0;
 }
 
-/* ===== Dashboard Table Section ===== */
-.dash-table-section {
+/* ===== Overview KPIs ===== */
+.ov-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.ov-kpi {
   background: #ffffff;
-  border: 1px solid var(--border-divider);
-  border-radius: var(--radius-lg);
+  border: 1px solid #ebebef;
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.ov-kpi-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.ov-kpi-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ov-kpi-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.ov-kpi-trend {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--trend-positive);
+}
+
+/* ===== Overview Card ===== */
+.ov-card {
+  background: #ffffff;
+  border: 1px solid #ebebef;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
-.dash-table-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border-divider);
+.ov-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #ebebef;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
 }
+
+.ov-card-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.ov-card-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .ov-kpis { grid-template-columns: 1fr; }
+  .page-title { font-size: 1.4rem; }
+}
+
+/* Legacy support */
+.hero { display: none; }
+.dash-welcome { display: none; }
+.dash-kpi-row { display: none; }
+.dash-section { display: none; }
+.dash-hero { display: none; }
+.dash-stats { display: none; }
+.dash-stat { display: none; }
+.dash-table-section { display: none; }
+.dash-table-header { display: none; }
 
 .dash-table-header h3 {
   font-family: var(--font-display);

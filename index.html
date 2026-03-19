@@ -87,32 +87,41 @@
       <main class="content client-content">
         <div class="client-view active" id="clientDashboardView" data-client-view="dashboard">
 
-          <section class="dash-hero">
-            <div class="dash-hero-content">
-              <p class="dash-hero-greeting" id="clientGreeting">Bienvenue</p>
-              <h2 class="dash-hero-title">Votre espace miniatures</h2>
-              <p class="dash-hero-desc">Retrouvez vos commandes, vos livrables et previewez vos miniatures sur YouTube.</p>
+          <!-- Page header -->
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Tableau de bord</h2>
+              <p class="page-desc" id="clientGreeting">Suivi en temps reel de vos miniatures.</p>
             </div>
-          </section>
+          </div>
 
-          <div class="dash-stats">
-            <article class="dash-stat">
-              <span class="dash-stat-value" id="totalThumbs">&mdash;</span>
-              <span class="dash-stat-label">Miniatures totales</span>
+          <!-- KPIs -->
+          <div class="ov-kpis">
+            <article class="ov-kpi">
+              <span class="ov-kpi-label">Miniatures totales</span>
+              <div class="ov-kpi-row">
+                <span class="ov-kpi-value" id="totalThumbs">&mdash;</span>
+              </div>
             </article>
-            <article class="dash-stat">
-              <span class="dash-stat-value" id="deliveredThisMonth">&mdash;</span>
-              <span class="dash-stat-label">Livrees ce mois</span>
+            <article class="ov-kpi">
+              <span class="ov-kpi-label">Livrees ce mois</span>
+              <div class="ov-kpi-row">
+                <span class="ov-kpi-value" id="deliveredThisMonth">&mdash;</span>
+              </div>
             </article>
-            <article class="dash-stat">
-              <span class="dash-stat-value" id="lastDelivered">&mdash;</span>
-              <span class="dash-stat-label">Derniere livraison</span>
+            <article class="ov-kpi">
+              <span class="ov-kpi-label">Derniere livraison</span>
+              <div class="ov-kpi-row">
+                <span class="ov-kpi-value" id="lastDelivered">&mdash;</span>
+              </div>
             </article>
           </div>
 
-          <section class="dash-table-section">
-            <div class="dash-table-header">
+          <!-- Suivi commandes -->
+          <section class="ov-card">
+            <div class="ov-card-header">
               <h3>Suivi des commandes</h3>
+              <p class="ov-card-subtitle">Historique de vos demandes de miniatures</p>
             </div>
             <div id="clientTableHost" class="table-host"></div>
           </section>
