@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css?v=12" />
+  <link rel="stylesheet" href="./style.css?v=13" />
   <script>
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
@@ -233,91 +233,194 @@
           </div>
         </section>
 
-        <section class="client-view youtube-view" id="clientYoutubeView" data-client-view="youtube-analysis"
-          aria-labelledby="youtubeTitle">
-          <div class="youtube-hero card">
-            <div class="youtube-hero-content">
-              <span class="youtube-pill">Powered by Mistral AI</span>
-              <h2 id="youtubeTitle">Analyse YouTube & IA</h2>
-              <p class="youtube-subtitle">Entrez l'URL d'une chaîne YouTube pour obtenir des statistiques détaillées et
-                des recommandations personnalisées générées par l'IA.</p>
-
-              <form id="youtubeAnalyzeForm" class="youtube-search-box">
-                <input type="url" id="youtubeUrlInput" placeholder="https://www.youtube.com/@MrBeast" required />
-                <button type="submit" class="btn btn-primary" id="youtubeAnalyzeBtn">
-                  <span>Analyser</span>
-                </button>
-              </form>
-              <p class="youtube-error hidden" id="youtubeError"></p>
+        <!-- ===== PERFORMANCE ===== -->
+        <section class="client-view" id="clientYoutubeView" data-client-view="youtube-analysis" aria-labelledby="youtubeTitle">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title" id="youtubeTitle">Performance</h2>
+              <p class="page-desc">Analyse les stats YouTube d'une chaîne et obtiens des recommandations IA.</p>
             </div>
+          </div>
+
+          <div class="perf-search-card">
+            <form id="youtubeAnalyzeForm" class="perf-search-form">
+              <div class="perf-search-input-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="url" id="youtubeUrlInput" placeholder="https://www.youtube.com/@MrBeast" required />
+              </div>
+              <button type="submit" class="btn-primary-sm" id="youtubeAnalyzeBtn">Analyser</button>
+            </form>
+            <p class="perf-error hidden" id="youtubeError"></p>
           </div>
 
           <div id="youtubeResults" class="youtube-results hidden">
             <!-- Channel Header -->
-            <div class="channel-header card yt-dark-card">
-              <img id="channelAvatar" src="" alt="Avatar" class="channel-avatar">
-              <div class="channel-info">
-                <h3 id="channelTitle">Nom de la chaine</h3>
-                <p id="channelDescription" class="channel-desc"></p>
+            <div class="perf-channel">
+              <img id="channelAvatar" src="" alt="Avatar" class="perf-channel-avatar">
+              <div class="perf-channel-info">
+                <h3 id="channelTitle">Nom de la chaîne</h3>
+                <p id="channelDescription" class="perf-channel-desc"></p>
               </div>
             </div>
 
             <!-- 6 KPI Cards -->
-            <div class="yt-kpi-grid">
-              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsSubs">-</div><div class="yt-kpi-label">Abonnes</div></article>
-              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsVideosLong">-</div><div class="yt-kpi-label">Videos (hors shorts)</div></article>
-              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsTotalViews">-</div><div class="yt-kpi-label">Vues totales</div></article>
-              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsAvgViews">-</div><div class="yt-kpi-label">Vues moyennes</div></article>
-              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsEngagement">-</div><div class="yt-kpi-label">Engagement</div></article>
-              <article class="yt-kpi-card"><div class="yt-kpi-value" id="statsMedianViews">-</div><div class="yt-kpi-label">Vues medianes</div></article>
+            <div class="ov-kpis" style="grid-template-columns:repeat(3,1fr)">
+              <article class="ov-kpi"><span class="ov-kpi-label">Abonnés</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsSubs">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vidéos (hors shorts)</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsVideosLong">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vues totales</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsTotalViews">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vues moyennes</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsAvgViews">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Engagement</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsEngagement">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vues médianes</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsMedianViews">-</span></div></article>
             </div>
 
-            <!-- Tables: Top 10 + Outliers -->
-            <div class="yt-tables-row">
-              <div class="yt-table-card">
-                <h3>Top 10 all-time</h3>
-                <div class="yt-table-scroll">
-                  <table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Duree</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytTopTable"></tbody></table>
-                </div>
+            <!-- Tables -->
+            <div class="perf-tables">
+              <div class="ov-card">
+                <div class="ov-card-header"><h3>Top 10 all-time</h3></div>
+                <div class="ov-table-wrap"><table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Durée</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytTopTable"></tbody></table></div>
               </div>
-              <div class="yt-table-card">
-                <h3>Meilleurs outliers</h3>
-                <div class="yt-table-scroll">
-                  <table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Duree</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytOutliersTable"></tbody></table>
-                </div>
+              <div class="ov-card">
+                <div class="ov-card-header"><h3>Meilleurs outliers</h3></div>
+                <div class="ov-table-wrap"><table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Durée</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytOutliersTable"></tbody></table></div>
               </div>
             </div>
 
-            <!-- Bar Chart: Views per video -->
-            <div class="yt-chart-card">
-              <h3>Vues par video (Top 12)</h3>
-              <div class="yt-chart-container"><canvas id="ytBarChart"></canvas></div>
+            <!-- Charts -->
+            <div class="ov-card">
+              <div class="ov-card-header"><h3>Vues par vidéo (Top 12)</h3></div>
+              <div class="perf-chart-wrap"><canvas id="ytBarChart"></canvas></div>
             </div>
 
-            <!-- Time Series Chart -->
-            <div class="yt-chart-card">
-              <div class="yt-chart-header">
-                <h3>Evolution temporelle</h3>
-                <div class="yt-chart-controls">
-                  <div class="yt-control-group" id="ytRangeGroup">
-                    <button class="yt-control-btn" data-range="90">3 mois</button>
-                    <button class="yt-control-btn" data-range="180">6 mois</button>
-                    <button class="yt-control-btn" data-range="365">1 an</button>
-                    <button class="yt-control-btn active" data-range="0">Tout</button>
+            <div class="ov-card">
+              <div class="ov-card-header">
+                <h3>Évolution temporelle</h3>
+                <div class="perf-controls">
+                  <div class="ov-toggle-group" id="ytRangeGroup">
+                    <button class="ov-toggle-btn" data-range="90">3m</button>
+                    <button class="ov-toggle-btn" data-range="180">6m</button>
+                    <button class="ov-toggle-btn" data-range="365">1a</button>
+                    <button class="ov-toggle-btn active" data-range="0">Tout</button>
                   </div>
-                  <div class="yt-control-group" id="ytGranGroup">
-                    <button class="yt-control-btn" data-gran="day">Jour</button>
-                    <button class="yt-control-btn" data-gran="week">Semaine</button>
-                    <button class="yt-control-btn active" data-gran="month">Mois</button>
+                  <div class="ov-toggle-group" id="ytGranGroup">
+                    <button class="ov-toggle-btn" data-gran="day">J</button>
+                    <button class="ov-toggle-btn" data-gran="week">S</button>
+                    <button class="ov-toggle-btn active" data-gran="month">M</button>
                   </div>
-                  <div class="yt-control-group" id="ytMetricGroup">
-                    <button class="yt-control-btn active" data-metric="views">Vues</button>
-                    <button class="yt-control-btn active" data-metric="likes">Likes</button>
-                    <button class="yt-control-btn" data-metric="comments">Commentaires</button>
+                  <div class="ov-toggle-group" id="ytMetricGroup">
+                    <button class="ov-toggle-btn active" data-metric="views">Vues</button>
+                    <button class="ov-toggle-btn active" data-metric="likes">Likes</button>
+                    <button class="ov-toggle-btn" data-metric="comments">Com.</button>
                   </div>
                 </div>
               </div>
-              <div class="yt-chart-container"><canvas id="ytTimeSeriesChart"></canvas></div>
+              <div class="perf-chart-wrap"><canvas id="ytTimeSeriesChart"></canvas></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== REQUESTS ===== -->
+        <section class="client-view" id="clientRequestsView" data-client-view="requests">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Requests</h2>
+              <p class="page-desc">Soumets une nouvelle demande de miniature et suis l'avancement.</p>
+            </div>
+            <div class="page-header-actions">
+              <a class="btn-primary-sm" href="mailto:contact@miniads.fr?subject=Nouvelle+miniature">+ Nouvelle demande</a>
+            </div>
+          </div>
+
+          <!-- New request form -->
+          <div class="req-form-card ov-card">
+            <div class="ov-card-header"><h3>Nouvelle demande</h3></div>
+            <form class="req-form" id="requestForm">
+              <div class="req-form-row">
+                <label class="req-field">
+                  <span class="req-label">Titre de la vidéo</span>
+                  <input type="text" placeholder="Ex: Why I Quit My Job" class="req-input">
+                </label>
+                <label class="req-field">
+                  <span class="req-label">Chaîne / Créateur</span>
+                  <input type="text" placeholder="Ex: MrBeast" class="req-input">
+                </label>
+              </div>
+              <label class="req-field">
+                <span class="req-label">Détails & instructions</span>
+                <textarea class="req-textarea" rows="3" placeholder="Décris le style souhaité, les couleurs, les références..."></textarea>
+              </label>
+              <label class="req-field">
+                <span class="req-label">Références visuelles</span>
+                <div class="req-upload" id="reqUploadZone">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Glisse des images ici ou <strong>clique pour parcourir</strong></span>
+                  <input type="file" multiple accept="image/*" class="req-upload-input">
+                </div>
+              </label>
+              <div class="req-form-actions">
+                <button type="submit" class="btn-primary-sm">Envoyer la demande</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Request history -->
+          <div class="ov-card">
+            <div class="ov-card-header"><h3>Historique des demandes</h3></div>
+            <div class="ov-table-wrap" id="requestsTableHost">
+              <table class="yt-table">
+                <thead>
+                  <tr><th>Titre</th><th>Créateur</th><th>Date</th><th>Status</th></tr>
+                </thead>
+                <tbody id="requestsTableBody">
+                  <tr><td colspan="4" class="empty">Les demandes apparaîtront ici.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== BILLING ===== -->
+        <section class="client-view" id="clientBillingView" data-client-view="billing">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Billing</h2>
+              <p class="page-desc">Ton abonnement et l'historique de tes transactions.</p>
+            </div>
+          </div>
+
+          <!-- Current plan -->
+          <div class="bill-plan-card">
+            <div class="bill-plan-info">
+              <span class="bill-plan-badge">Plan actuel</span>
+              <h3 class="bill-plan-name">Miniads Pro</h3>
+              <p class="bill-plan-desc">Miniatures illimitées, support prioritaire, accès galerie Drive.</p>
+            </div>
+            <div class="bill-plan-price">
+              <span class="bill-price-value">Sur devis</span>
+              <a href="mailto:contact@miniads.fr?subject=Billing" class="btn-outline">Contacter</a>
+            </div>
+          </div>
+
+          <!-- Transactions -->
+          <div class="ov-card">
+            <div class="ov-card-header"><h3>Transactions</h3></div>
+            <div class="ov-table-wrap">
+              <table class="yt-table">
+                <thead>
+                  <tr><th>Date</th><th>Description</th><th>Montant</th><th>Status</th></tr>
+                </thead>
+                <tbody id="billingTableBody">
+                  <tr><td colspan="4" class="empty">Aucune transaction pour le moment.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Payment info -->
+          <div class="ov-card">
+            <div class="ov-card-header"><h3>Moyen de paiement</h3></div>
+            <div class="bill-payment-empty">
+              <p>Aucun moyen de paiement enregistré.</p>
+              <a href="mailto:contact@miniads.fr?subject=Payment+Method" class="btn-outline">Ajouter</a>
             </div>
           </div>
         </section>

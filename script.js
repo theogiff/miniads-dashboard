@@ -3699,26 +3699,26 @@ function initYoutubeAnalysis() {
   let currentRange = 0, currentGran = "month", currentMetrics = ["views", "likes"];
 
   function setupControls() {
-    document.querySelectorAll("#ytRangeGroup .yt-control-btn").forEach(btn => {
+    document.querySelectorAll("#ytRangeGroup .ov-toggle-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll("#ytRangeGroup .yt-control-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll("#ytRangeGroup .ov-toggle-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         currentRange = parseInt(btn.dataset.range);
         renderTimeSeries(ytAllVideos, currentRange, currentGran, currentMetrics);
       });
     });
-    document.querySelectorAll("#ytGranGroup .yt-control-btn").forEach(btn => {
+    document.querySelectorAll("#ytGranGroup .ov-toggle-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll("#ytGranGroup .yt-control-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll("#ytGranGroup .ov-toggle-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         currentGran = btn.dataset.gran;
         renderTimeSeries(ytAllVideos, currentRange, currentGran, currentMetrics);
       });
     });
-    document.querySelectorAll("#ytMetricGroup .yt-control-btn").forEach(btn => {
+    document.querySelectorAll("#ytMetricGroup .ov-toggle-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         btn.classList.toggle("active");
-        currentMetrics = Array.from(document.querySelectorAll("#ytMetricGroup .yt-control-btn.active")).map(b => b.dataset.metric);
+        currentMetrics = Array.from(document.querySelectorAll("#ytMetricGroup .ov-toggle-btn.active")).map(b => b.dataset.metric);
         if (currentMetrics.length === 0) { btn.classList.add("active"); currentMetrics = [btn.dataset.metric]; }
         renderTimeSeries(ytAllVideos, currentRange, currentGran, currentMetrics);
       });
