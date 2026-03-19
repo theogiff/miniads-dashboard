@@ -2,16 +2,15 @@
 
 /* Tally embed */
 .req-tally-embed {
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid #ebebef;
   background: #ffffff;
-  min-height: 600px;
+  border-radius: var(--radius-md);
+  border: 1px solid #ebebef;
+  overflow: hidden;
 }
 
 .req-tally-embed iframe {
   width: 100%;
-  height: 700px;
+  min-height: 500px;
   border: 0;
 }
 

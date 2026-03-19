@@ -219,9 +219,41 @@ function loadRequestForm(packName, remaining, clientLabel) {
 
   container.innerHTML = `
     <div class="req-tally-embed">
-      <iframe src="${TALLY_BASE_URL}?${params.toString()}" loading="lazy" title="Formulaire de demande Miniads" allowfullscreen></iframe>
+      <iframe
+        data-tally-src="${TALLY_BASE_URL}?${params.toString()}"
+        loading="lazy"
+        title="Formulaire de demande Miniads"
+        frameborder="0"
+        marginheight="0"
+        marginwidth="0"
+      ></iframe>
     </div>
   `;
+
+  // Load Tally embed script for auto-resize
+  const iframe = container.querySelector("iframe");
+  if (iframe) {
+    iframe.src = `${TALLY_BASE_URL}?${params.toString()}`;
+    // Listen for Tally resize messages
+    window.addEventListener("message", function tallyResize(e) {
+      if (e.data && typeof e.data === "object" && e.data["tally.formLoaded"]) {
+        iframe.style.minHeight = "0";
+      }
+      if (e.data && typeof e.data === "object" && e.data["tally.formPageChanged"]) {
+        iframe.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (e.data && typeof e.data === "string") {
+        try {
+          const parsed = JSON.parse(e.data);
+          if (parsed.event === "Tally.FormLoaded" || parsed.event === "Tally.FormPageChanged") {
+            if (parsed.payload && parsed.payload.height) {
+              iframe.style.height = parsed.payload.height + "px";
+            }
+          }
+        } catch (_) {}
+      }
+    });
+  }
 
   // Load submission history from Tally API
   loadTallySubmissions(clientLabel);
