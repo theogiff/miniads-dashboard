@@ -801,9 +801,11 @@ let currentFiles = [];
 
 async function displayClientMiniatures(slug) {
   try {
+    console.log("[Drive] Fetching miniatures for slug:", slug);
     const data = await fetchDriveFilesForClient(slug);
 
     currentFiles = data.files || [];
+    console.log("[Drive] Got", currentFiles.length, "files. First:", currentFiles[0]?.name, "| thumb:", currentFiles[0]?.thumbnailLink);
 
     setMiniaturesView("folders");
 
@@ -811,7 +813,7 @@ async function displayClientMiniatures(slug) {
     populateRecentWorkFromDrive(currentFiles);
 
   } catch (e) {
-    console.error("Erreur affichage miniatures :", e);
+    console.error("[Drive] Erreur affichage miniatures:", e.message);
     if (miniaturesGrid) miniaturesGrid.innerHTML = "<p>Erreur lors du chargement des miniatures.</p>";
   }
 }
@@ -3488,6 +3490,12 @@ if (isAdminRoute) {
     setClientContext(clientConfig.label || slugToName(clientParam));
     updateMiniaturesLibrary(clientConfig);
     loadAirtable(clientConfig);
+    // Load Drive thumbnails for Overview "Dernières miniatures"
+    if (clientParam) {
+      displayClientMiniatures(clientParam).catch(err => {
+        console.warn("Drive files pour Overview non disponibles:", err.message);
+      });
+    }
   } else {
     console.warn(`Aucun client configuré ou clé invalide pour le slug « ${clientParam} ».`);
     document.body.classList.remove("admin-mode");
