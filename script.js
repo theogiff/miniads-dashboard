@@ -201,6 +201,8 @@ const DEFAULT_BASE_ID = "app4xekxY53MuEQvK";
 const DEFAULT_TABLE_ID = "tblnA0z8ooGAZYXIp";
 const DEFAULT_VIEW_ID = "";
 const DEFAULT_PSEUDO_FIELD = "Créateurs";
+const PACKS_TABLE_ID = "tbldaOp2rbjxKuLsr";
+const CLIENTS_TABLE_ID = "tblwTQ6JgbVv1Krj8";
 // Mappe chaque client à ses paramètres Airtable.
 const CLIENTS = {
   // Exemple:
@@ -4007,8 +4009,6 @@ function populateRecentWorkFromDrive(files) {
 }
 
 // ===== Billing: Load pack + order history from Airtable =====
-const PACKS_TABLE_ID = "tbldaOp2rbjxKuLsr";
-const CLIENTS_TABLE_ID = "tblwTQ6JgbVv1Krj8";
 
 async function loadBillingData(clientLabel) {
   if (!clientLabel) return;
