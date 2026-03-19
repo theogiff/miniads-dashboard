@@ -642,7 +642,7 @@ function refreshPreview() {
 
 async function fetchVideosForChannel(channelId) {
   const searchResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=20&key=${YOUTUBE_API_KEY}&rnd=${Math.random()}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=50&key=${YOUTUBE_API_KEY}&rnd=${Math.random()}`
   );
 
   if (!searchResponse.ok) {
@@ -680,7 +680,7 @@ async function fetchYouTubeVideos() {
       return aggregated;
     }
 
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=FR&maxResults=20&key=${YOUTUBE_API_KEY}&rnd=${Math.random()}`;
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=FR&maxResults=50&key=${YOUTUBE_API_KEY}&rnd=${Math.random()}`;
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -696,13 +696,23 @@ async function fetchYouTubeVideos() {
   }
 }
 
+function parseDurationSeconds(duration) {
+  const safeDuration = duration || 'PT0M0S';
+  const match = safeDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  return parseInt(match[1] || 0) * 3600 + parseInt(match[2] || 0) * 60 + parseInt(match[3] || 0);
+}
+
+function isLongVideo(video) {
+  return parseDurationSeconds(video.contentDetails?.duration) >= 600;
+}
+
 function formatDuration(duration) {
   const safeDuration = duration || 'PT0M0S';
   const match = safeDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   const hours = parseInt(match[1] || 0);
   const minutes = parseInt(match[2] || 0);
   const seconds = parseInt(match[3] || 0);
-  
+
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
@@ -749,8 +759,9 @@ async function createVideoFeed(forceShuffle = false) {
   const youtubeVideos = await fetchYouTubeVideos();
   
   if (youtubeVideos && youtubeVideos.length > 0) {
-    const primaryShuffle = shuffleArray(youtubeVideos);
-    const videosToShow = (forceShuffle ? shuffleArray(primaryShuffle) : primaryShuffle).slice(0, 24);
+    const longVideosOnly = youtubeVideos.filter(isLongVideo);
+    const primaryShuffle = shuffleArray(longVideosOnly);
+    const videosToShow = forceShuffle ? shuffleArray(primaryShuffle) : primaryShuffle;
     
     videosToShow.forEach(video => {
       const videoCard = createVideoCard({

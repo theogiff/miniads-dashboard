@@ -137,74 +137,137 @@
           </div>
         </section>
 
-        <section class="client-view extension-view" id="clientExtensionView" data-client-view="extension-miniads"
-          aria-labelledby="extensionTitle">
-          <div class="extension-hero card">
-            <div class="extension-hero-text">
-              <span class="extension-pill">Extension Chrome</span>
-              <h2 id="extensionTitle">Installer l’extension Miniads</h2>
-              <p class="extension-subtitle">
-                Testez vos miniatures directement dans un faux feed YouTube, partagez vos essais et gagnez du temps sur
-                vos validations.
-              </p>
-              <ul class="extension-list">
-                <li>Précharge vos visuels depuis “Mes miniatures”.</li>
-                <li>Recherche de chaînes YouTube intégrée.</li>
-                <li>Affichage desktop, mobile et suggestions.</li>
-              </ul>
-              <div class="extension-actions">
-                <button type="button" class="btn extension-btn" id="extensionInstallBtn">Installer l’extension</button>
-                <a class="btn btn-secondary extension-btn-secondary" id="extensionDocBtn"
-                  href="./miniads-claude/preview.html" target="_blank" rel="noopener">Accéder à l’extension</a>
+        <section class=”client-view extension-view” id=”clientExtensionView” data-client-view=”extension-miniads”
+          aria-labelledby=”extensionTitle”>
+
+          <!-- Preview Tool intégré -->
+          <div class=”preview-tool”>
+            <div class=”preview-left-panel”>
+              <div class=”preview-logo”>
+                <img src=”./logo.svg” alt=”Miniads”>
+                <div class=”preview-logo-text”>
+                  <div class=”preview-logo-title”>Miniads</div>
+                  <div class=”preview-logo-subtitle”>YouTube Thumbnail Preview</div>
+                </div>
+              </div>
+
+              <div class=”preview-section”>
+                <div class=”preview-section-title”>Miniature</div>
+                <input type=”file” id=”previewThumbnailInput” accept=”image/*”>
+                <div class=”preview-thumbnail-container” id=”previewThumbnailContainer”>
+                  <img id=”previewUserThumbnail” alt=”Your thumbnail” style=”display: none;”>
+                  <div class=”preview-upload-prompt” id=”previewUploadPrompt”>
+                    <div class=”preview-upload-icon”>+</div>
+                    <div>Cliquez pour uploader</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class=”preview-section”>
+                <div class=”preview-info-box”>
+                  <div class=”preview-info-label”>Titre de la video</div>
+                  <input type=”text” id=”previewTitleInput” placeholder=”Votre titre ici...”>
+                </div>
+                <div class=”preview-info-box”>
+                  <div class=”preview-info-label preview-label-action” data-modal-id=”previewChannelSearchModal” data-input-id=”previewChannelSearchInput”>
+                    Nom de la chaine
+                  </div>
+                  <button class=”preview-channel-search-trigger” id=”previewChannelSearchBtn” type=”button”>
+                    <span>&#128269;</span>
+                    <span id=”previewChannelSearchPlaceholder”>Rechercher une chaine...</span>
+                  </button>
+                  <div id=”previewSelectedChannelPreview”></div>
+                </div>
+              </div>
+
+              <div class=”preview-section”>
+                <div class=”preview-section-title”>Position</div>
+                <div class=”preview-btn-group”>
+                  <button class=”preview-btn preview-btn-small” id=”previewRandomPosBtn”>Aleatoire</button>
+                  <button class=”preview-btn preview-btn-small preview-btn-secondary” id=”previewTopPosBtn”>En haut</button>
+                </div>
+              </div>
+
+              <div class=”preview-section”>
+                <div class=”preview-section-title”>Affichage</div>
+                <div class=”preview-view-selector”>
+                  <button class=”preview-view-btn active” data-preview-view=”feed”>Feed</button>
+                  <button class=”preview-view-btn” data-preview-view=”mobile”>Mobile</button>
+                  <button class=”preview-view-btn” data-preview-view=”tab”>Onglet</button>
+                </div>
+              </div>
+
+              <div class=”preview-section”>
+                <div class=”preview-section-title”>Source des videos</div>
+                <div class=”preview-info-box”>
+                  <div class=”preview-info-label preview-label-action” data-modal-id=”previewVideoSourceSearchModal” data-input-id=”previewVideoSourceSearchInput”>
+                    Chaine YouTube (optionnel)
+                  </div>
+                  <button class=”preview-channel-search-trigger” id=”previewVideoSourceSearchBtn” type=”button”>
+                    <span>&#128269;</span>
+                    <span id=”previewVideoSourceSearchPlaceholder”>Rechercher une chaine...</span>
+                  </button>
+                  <div id=”previewSelectedVideoSourcePreview”></div>
+                </div>
+              </div>
+
+              <div class=”preview-section”>
+                <button class=”preview-btn” id=”previewRefreshBtn”>Rafraichir</button>
+                <button class=”preview-btn preview-btn-secondary” id=”previewClearBtn”>Effacer</button>
+              </div>
+
+              <div class=”preview-section”>
+                <a class=”preview-btn preview-btn-secondary” id=”extensionInstallBtn” href=”#” target=”_blank” rel=”noopener” style=”text-align:center;text-decoration:none;display:block;”>Extension Chrome</a>
               </div>
             </div>
-            <div class="extension-hero-visual">
-              <div class="extension-visual-blob"></div>
-              <img src="./logo.svg" alt="Logo Miniads" class="extension-logo">
+
+            <div class=”preview-right-panel”>
+              <div class=”preview-feed-header”>
+                <h1>Feed YouTube</h1>
+                <p>Decouvrez comment votre miniature apparait parmi les videos recommandees</p>
+              </div>
+              <div class=”preview-video-grid” id=”previewVideoGrid”></div>
             </div>
           </div>
 
-          <div class="extension-body">
-            <div class="extension-grid">
-              <article class="extension-card">
-                <div class="extension-card-icon">⚡️</div>
-                <h3>Gain de temps</h3>
-                <p>Ouvrez le feed d’un clic depuis “Mes miniatures”, sans télécharger ni recharger vos visuels.</p>
-              </article>
-              <article class="extension-card">
-                <div class="extension-card-icon">🔍</div>
-                <h3>Recherche chaîne YouTube</h3>
-                <p>Saisissez ou sélectionnez vos chaînes pour tester vos thumbnails aux côtés de contenus réels.</p>
-              </article>
-              <article class="extension-card">
-                <div class="extension-card-icon">🖥️</div>
-                <h3>Multi-contextes</h3>
-                <p>Basculer entre desktop, mobile et suggestions pour vérifier l’impact partout.</p>
-              </article>
-              <article class="extension-card">
-                <div class="extension-card-icon">📊</div>
-                <h3>Prêt pour vos clients</h3>
-                <p>Montrez une preview “comme sur YouTube” pour valider plus vite vos créations.</p>
-              </article>
-            </div>
-
-            <div class="extension-steps card">
-              <div class="extension-steps-header">
-                <h3>Comment l’installer ?</h3>
-                <p>Suivez ces étapes (2 minutes) et testez votre prochaine miniature.</p>
-              </div>
-              <ol class="extension-steps-list">
-                <li>Ouvrez le Chrome Web Store via le bouton “Installer l’extension”.</li>
-                <li>Ajoutez l’extension Miniads et épinglez-la dans Chrome.</li>
-                <li>Dans “Mes miniatures”, cliquez sur “Voir sur le feed YouTube” pour précharger votre visuel.</li>
-              </ol>
-              <div class="extension-inline-cta">
-                <button type="button" class="btn extension-btn" id="extensionInstallBtnInline">Installer
-                  maintenant</button>
-                <span class="extension-note">Besoin d’aide ? contact@miniads.fr</span>
+          <!-- Modal recherche chaine -->
+          <div class=”preview-modal-overlay” id=”previewChannelSearchModal”>
+            <div class=”preview-modal-wrapper”>
+              <div class=”preview-modal-box”>
+                <button class=”preview-modal-close” type=”button” data-close-preview-modal=”previewChannelSearchModal”>&times;</button>
+                <h2 class=”preview-modal-title”>Rechercher une chaine</h2>
+                <p class=”preview-modal-subtitle”>Trouvez et selectionnez votre chaine YouTube</p>
+                <div class=”preview-modal-search-box”>
+                  <input type=”text” id=”previewChannelSearchInput” class=”preview-modal-search-input” placeholder=”Tapez pour rechercher...” autocomplete=”off”>
+                </div>
+                <div class=”preview-modal-results” id=”previewChannelSearchResults”>
+                  <div class=”preview-results-empty”>
+                    <div class=”preview-empty-text”>Recherchez une chaine YouTube</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Modal recherche source video -->
+          <div class=”preview-modal-overlay” id=”previewVideoSourceSearchModal”>
+            <div class=”preview-modal-wrapper”>
+              <div class=”preview-modal-box”>
+                <button class=”preview-modal-close” type=”button” data-close-preview-modal=”previewVideoSourceSearchModal”>&times;</button>
+                <h2 class=”preview-modal-title”>Source des videos</h2>
+                <p class=”preview-modal-subtitle”>Chargez les videos d’une chaine specifique</p>
+                <div class=”preview-modal-search-box”>
+                  <input type=”text” id=”previewVideoSourceSearchInput” class=”preview-modal-search-input” placeholder=”Tapez pour rechercher...” autocomplete=”off”>
+                </div>
+                <div class=”preview-modal-results” id=”previewVideoSourceSearchResults”>
+                  <div class=”preview-results-empty”>
+                    <div class=”preview-empty-text”>Recherchez une chaine YouTube</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </section>
 
         <section class="client-view youtube-view" id="clientYoutubeView" data-client-view="youtube-analysis"
