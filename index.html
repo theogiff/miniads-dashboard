@@ -337,43 +337,13 @@
           <div class="page-header">
             <div>
               <h2 class="page-title">Demandes</h2>
-              <p class="page-desc">Soumets une nouvelle demande de miniature et suis l'avancement.</p>
-            </div>
-            <div class="page-header-actions">
-              <a class="btn-primary-sm" href="mailto:contact@miniads.fr?subject=Nouvelle+miniature">+ Nouvelle demande</a>
+              <p class="page-desc">Soumets une nouvelle demande de miniature.</p>
             </div>
           </div>
 
-          <!-- New request form -->
-          <div class="req-form-card ov-card">
-            <div class="ov-card-header"><h3>Nouvelle demande</h3></div>
-            <form class="req-form" id="requestForm">
-              <div class="req-form-row">
-                <label class="req-field">
-                  <span class="req-label">Titre de la vidéo</span>
-                  <input type="text" placeholder="Ex: Why I Quit My Job" class="req-input">
-                </label>
-                <label class="req-field">
-                  <span class="req-label">Chaîne / Créateur</span>
-                  <input type="text" placeholder="Ex: MrBeast" class="req-input">
-                </label>
-              </div>
-              <label class="req-field">
-                <span class="req-label">Détails & instructions</span>
-                <textarea class="req-textarea" rows="3" placeholder="Décris le style souhaité, les couleurs, les références..."></textarea>
-              </label>
-              <label class="req-field">
-                <span class="req-label">Références visuelles</span>
-                <div class="req-upload" id="reqUploadZone">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <span>Glisse des images ici ou <strong>clique pour parcourir</strong></span>
-                  <input type="file" multiple accept="image/*" class="req-upload-input">
-                </div>
-              </label>
-              <div class="req-form-actions">
-                <button type="submit" class="btn-primary-sm">Envoyer la demande</button>
-              </div>
-            </form>
+          <!-- Tally form or "no pack" state -->
+          <div id="requestFormContainer">
+            <div class="req-loading">Chargement du formulaire...</div>
           </div>
 
           <!-- Request history -->

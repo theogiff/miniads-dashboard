@@ -1,86 +1,60 @@
 /* ===== Requests Page ===== */
-.req-form {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
 
-.req-form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.req-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.req-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.req-input,
-.req-textarea {
-  padding: 10px 14px;
-  border: 1px solid #e4e4e7;
-  border-radius: var(--radius-sm);
-  font-size: 0.88rem;
-  color: var(--text-primary);
+/* Tally embed */
+.req-tally-embed {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid #ebebef;
   background: #ffffff;
-  transition: border-color 0.15s;
-  font-family: var(--font-sans);
+  min-height: 600px;
 }
 
-.req-input:focus,
-.req-textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255, 153, 28, 0.08);
+.req-tally-embed iframe {
+  width: 100%;
+  height: 700px;
+  border: 0;
 }
 
-.req-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.req-upload {
+/* No pack state */
+.req-no-pack {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 32px;
+  gap: 16px;
+  padding: 60px 32px;
+  background: #ffffff;
   border: 2px dashed #d4d4d8;
   border-radius: var(--radius-md);
-  background: #fafafa;
-  color: var(--text-tertiary);
-  font-size: 0.85rem;
   text-align: center;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  position: relative;
 }
 
-.req-upload:hover {
-  border-color: var(--accent);
-  background: rgba(255, 153, 28, 0.03);
-}
-
-.req-upload-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.req-form-actions {
+.req-no-pack-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f4f4f5;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+
+.req-no-pack h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.req-no-pack p {
+  font-size: 0.88rem;
+  color: var(--text-tertiary);
+  max-width: 400px;
+}
+
+.req-loading {
+  padding: 60px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.88rem;
 }
