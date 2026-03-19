@@ -407,8 +407,10 @@ function createFolderMiniCard(file, parentLabel) {
   const item = document.createElement("div");
   item.className = "folder-mini-card";
 
-  const thumb = document.createElement("div");
+  const thumb = document.createElement("button");
+  thumb.type = "button";
   thumb.className = "folder-mini-thumb";
+  thumb.addEventListener("click", () => openMiniaturePip(file));
   const img = document.createElement("img");
   img.alt = file.name || "Miniature";
   img.loading = "lazy";
@@ -435,6 +437,12 @@ function createFolderMiniCard(file, parentLabel) {
 
   const actions = document.createElement("div");
   actions.className = "folder-mini-actions";
+  const feedBtn = document.createElement("button");
+  feedBtn.type = "button";
+  feedBtn.className = "mini-card-btn mini-card-btn-accent";
+  feedBtn.textContent = "Voir sur le feed";
+  feedBtn.addEventListener("click", () => openInYoutubeFeed(file, feedBtn));
+  actions.appendChild(feedBtn);
   if (file.webViewLink) {
     const openLink = document.createElement("a");
     openLink.className = "mini-card-btn mini-card-btn-primary";
