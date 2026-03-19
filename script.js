@@ -790,11 +790,6 @@ function isSameMonth(dateA, dateB = new Date()) {
 }
 
 function openInYoutubeFeed(file = {}, triggerBtn) {
-  if (!MINIADS_EXTENSION_ID) {
-    alert("Extension Miniads non configurée. Ajoutez MINIADS_EXTENSION_ID dans window pour activer le bouton.");
-    return;
-  }
-
   const thumb = getMiniatureThumbnail(file.thumbnailLink);
   const title = truncateText(file.name || "Votre miniature", 90);
   const channel = getFolderLabel(file);
@@ -804,7 +799,7 @@ function openInYoutubeFeed(file = {}, triggerBtn) {
     channel
   });
 
-  const url = `chrome-extension://${MINIADS_EXTENSION_ID}/preview.html?${params.toString()}`;
+  const url = `./miniads-claude/preview.html?${params.toString()}`;
   if (triggerBtn) {
     triggerBtn.disabled = true;
     triggerBtn.textContent = "Ouverture…";
