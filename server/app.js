@@ -626,5 +626,34 @@ app.get("/api/stripe/invoices", async (req, res) => {
   }
 });
 
+// --- Tally: Submissions proxy ---
+const TALLY_API_KEY = process.env.TALLY_API_KEY;
+const TALLY_FORM_ID = "mDvdDE";
+
+app.get("/api/tally/submissions", async (req, res) => {
+  try {
+    if (!TALLY_API_KEY) {
+      return res.status(500).json({ error: "Clé Tally non configurée." });
+    }
+
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 50;
+
+    const tallyRes = await fetch(
+      `https://api.tally.so/forms/${TALLY_FORM_ID}/submissions?page=${page}&limit=${limit}`,
+      { headers: { Authorization: `Bearer ${TALLY_API_KEY}` } }
+    );
+    const data = await tallyRes.json();
+    if (!tallyRes.ok) {
+      throw new Error(data.message || `Tally ${tallyRes.status}`);
+    }
+
+    res.json(data);
+  } catch (e) {
+    console.error("Erreur Tally /submissions:", e.message);
+    res.status(500).json({ error: "Erreur récupération soumissions Tally." });
+  }
+});
+
 // --- Exports ---
 export default app;

@@ -32,13 +32,13 @@ async function loadBillingData(clientLabel) {
       if (descEl) descEl.textContent = `Ton pack actuel chez Miniads.`;
       if (remainEl) remainEl.querySelector(".bill-remaining-value").textContent = remaining;
       // Load Tally form based on pack
-      loadRequestForm(pack.toLowerCase(), Number(remaining));
+      loadRequestForm(pack.toLowerCase(), Number(remaining), clientLabel);
     } else {
       if (badgeEl) badgeEl.textContent = "Aucun pack";
       if (nameEl) nameEl.textContent = "—";
       if (descEl) descEl.textContent = "Aucun pack trouvé pour ce compte.";
       if (remainEl) remainEl.querySelector(".bill-remaining-value").textContent = "—";
-      loadRequestForm(null, 0);
+      loadRequestForm(null, 0, clientLabel);
     }
   } catch (e) {
     console.warn("Erreur chargement pack Airtable:", e);
@@ -174,13 +174,14 @@ async function loadBillingData(clientLabel) {
 }
 
 // ===== Requests: Load Tally form based on pack =====
-const TALLY_URLS = {
-  standard: "https://tally.so/r/mDvdDE?pack=standard",
-  basique: "https://tally.so/r/mDvdDE?pack=standard",
-  premium: "https://tally.so/r/mDvdDE?pack=premium"
+const TALLY_BASE_URL = "https://tally.so/r/mDvdDE";
+
+// Tally field IDs for pre-fill (from API)
+const TALLY_FIELDS = {
+  pseudo: "5bYYNN"  // "Ton pseudo / Prénom"
 };
 
-function loadRequestForm(packName, remaining) {
+function loadRequestForm(packName, remaining, clientLabel) {
   const container = document.getElementById("requestFormContainer");
   if (!container) return;
 
@@ -199,21 +200,97 @@ function loadRequestForm(packName, remaining) {
     return;
   }
 
-  // Determine Tally URL
+  // Determine pack param
   const normalizedPack = packName.toLowerCase();
-  let tallyUrl = TALLY_URLS[normalizedPack];
-  if (!tallyUrl) {
-    // If pack name contains "10" or "premium", use premium URL
-    if (normalizedPack.includes("10") || normalizedPack.includes("premium") || normalizedPack.includes("pro")) {
-      tallyUrl = TALLY_URLS.premium;
-    } else {
-      tallyUrl = TALLY_URLS.standard;
-    }
+  let packParam = "standard";
+  if (normalizedPack.includes("10") || normalizedPack.includes("premium") || normalizedPack.includes("pro")) {
+    packParam = "premium";
+  }
+
+  // Build URL with pre-fill
+  const params = new URLSearchParams({
+    pack: packParam,
+    transparentBackground: "1"
+  });
+  // Pre-fill pseudo field
+  if (clientLabel) {
+    params.set(TALLY_FIELDS.pseudo, clientLabel);
   }
 
   container.innerHTML = `
     <div class="req-tally-embed">
-      <iframe src="${tallyUrl}&transparentBackground=1" loading="lazy" title="Formulaire de demande Miniads" allowfullscreen></iframe>
+      <iframe src="${TALLY_BASE_URL}?${params.toString()}" loading="lazy" title="Formulaire de demande Miniads" allowfullscreen></iframe>
     </div>
   `;
+
+  // Load submission history from Tally API
+  loadTallySubmissions(clientLabel);
+}
+
+// ===== Requests: Load submissions history from Tally API =====
+async function loadTallySubmissions(clientLabel) {
+  const tbody = document.getElementById("requestsTableBody");
+  if (!tbody || !clientLabel) return;
+
+  try {
+    const res = await fetch("/api/tally/submissions?limit=50");
+    const data = await res.json();
+    if (!res.ok || !data.submissions) {
+      console.warn("Tally submissions error:", data.error || "No data");
+      return;
+    }
+
+    // Map question IDs to titles for lookup
+    const questionMap = {};
+    (data.questions || []).forEach(q => {
+      (q.fields || []).forEach(f => {
+        questionMap[f.uuid] = q.title || f.title || "";
+      });
+    });
+
+    // Filter submissions by client pseudo
+    const clientNorm = clientLabel.toLowerCase().trim();
+    const clientSubmissions = data.submissions.filter(sub => {
+      const responses = sub.responses || [];
+      return responses.some(r => {
+        const qTitle = questionMap[r.questionId] || "";
+        if (qTitle.toLowerCase().includes("pseudo") || qTitle.toLowerCase().includes("prénom")) {
+          return String(r.answer || "").toLowerCase().trim() === clientNorm;
+        }
+        return false;
+      });
+    });
+
+    if (!clientSubmissions.length) return; // Keep Airtable data as fallback
+
+    tbody.innerHTML = "";
+    clientSubmissions.forEach(sub => {
+      const responses = sub.responses || [];
+      const getAnswer = (keyword) => {
+        const resp = responses.find(r => {
+          const qTitle = questionMap[r.questionId] || "";
+          return qTitle.toLowerCase().includes(keyword);
+        });
+        return resp ? String(resp.answer || "") : "—";
+      };
+
+      const titre = getAnswer("titre de la vidéo") || "—";
+      const date = sub.submittedAt
+        ? new Date(sub.submittedAt).toLocaleDateString("fr-FR", { year: "numeric", month: "2-digit", day: "2-digit" })
+        : "—";
+      const description = getAnswer("description") || "—";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${titre}</td>
+        <td title="${description}">${clientLabel}</td>
+        <td>${date}</td>
+        <td><span class="status-chip" data-status="realisee">Soumise</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    console.warn("Erreur chargement soumissions Tally:", e);
+    // Fallback: keep Airtable data already loaded
+  }
 }
