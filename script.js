@@ -4,76 +4,6 @@ function getParam(name) {
   return u.searchParams.get(name);
 }
 
-function parseCSV(text) {
-  if (!text) return [];
-  const rows = [];
-  let value = "";
-  let row = [];
-  let inQuotes = false;
-
-  const pushValue = () => {
-    row.push(value);
-    value = "";
-  };
-
-  const pushRow = () => {
-    pushValue();
-    rows.push(row);
-    row = [];
-  };
-
-  const input = text.replace(/\r\n?/g, "\n");
-  for (let i = 0; i < input.length; i++) {
-    const char = input[i];
-    if (inQuotes) {
-      if (char === '"') {
-        if (input[i + 1] === '"') {
-          value += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        value += char;
-      }
-    } else {
-      if (char === '"') {
-        inQuotes = true;
-      } else if (char === ",") {
-        pushValue();
-      } else if (char === "\n") {
-        pushRow();
-      } else {
-        value += char;
-      }
-    }
-  }
-
-  pushValue();
-  if (row.length > 1 || (row.length === 1 && row[0])) {
-    rows.push(row);
-  }
-
-  const cleaned = rows
-    .map(r => r.map((cell, idx) => {
-      let v = cell ?? "";
-      if (idx === 0) v = v.replace(/^\ufeff/, "");
-      return v.trim();
-    }))
-    .filter(r => r.some(cell => cell));
-
-  const headers = cleaned.shift();
-  if (!headers) return [];
-
-  return cleaned.map(r => {
-    const obj = {};
-    headers.forEach((h, i) => {
-      obj[h.trim()] = (r[i] ?? "").trim();
-    });
-    return obj;
-  });
-}
-
 function normalizeKey(str = "") {
   return str
     .toLowerCase()
@@ -844,9 +774,6 @@ const pipTitle = document.getElementById("miniaturePipTitle");
 const pipSubtitle = document.getElementById("miniaturePipSubtitle");
 const pipOpenLink = document.getElementById("miniaturePipOpen");
 const pipDownloadLink = document.getElementById("miniaturePipDownload");
-const extensionInstallBtn = document.getElementById("extensionInstallBtn");
-const extensionDocBtn = document.getElementById("extensionDocBtn");
-const extensionInstallBtnInline = document.getElementById("extensionInstallBtnInline");
 const topbar = document.querySelector(".topbar");
 
 async function fetchDriveFilesForClient(slug) {
@@ -1420,227 +1347,6 @@ function renderFolderView(files = [], { container = miniaturesGrid, emptyLabel }
 }
 
 
-const adminMiniaturesView = document.getElementById("adminMiniaturesView");
-const adminMiniaturesSearchInput = document.getElementById("adminMiniaturesSearch");
-const adminMiniaturesClientList = document.getElementById("adminMiniaturesClientList");
-const adminMiniaturesCountEl = document.getElementById("adminMiniaturesCount");
-const adminMiniaturesGrid = document.getElementById("adminMiniaturesGrid");
-const adminMiniaturesStatus = document.getElementById("adminMiniaturesStatus");
-const adminMiniaturesTitle = document.getElementById("adminMiniaturesTitle");
-const adminMiniaturesSubtitle = document.getElementById("adminMiniaturesSubtitle");
-const adminMiniaturesDriveLink = document.getElementById("adminMiniaturesDriveLink");
-const adminMiniaturesRefreshBtn = document.getElementById("adminMiniaturesRefresh");
-
-let adminDriveDirectory = [];
-let adminDriveDirectoryLoaded = false;
-let adminDriveDirectoryLoading = false;
-const adminDriveCache = new Map();
-let adminDriveActiveSlug = null;
-
-function getAdminMiniaturesFilter() {
-  return adminMiniaturesSearchInput ? adminMiniaturesSearchInput.value || "" : "";
-}
-
-function buildDriveDirectoryEntry(entry) {
-  if (!entry || !entry.name) return null;
-  const label = formatDriveClientLabel(entry.name);
-  const slug = toSlug(label);
-  if (!slug) return null;
-  return {
-    id: entry.id || "",
-    label,
-    rawName: entry.name || label,
-    slug,
-    driveUrl: entry.id ? `https://drive.google.com/drive/folders/${entry.id}` : ""
-  };
-}
-
-function setAdminMiniaturesStatus(message, { loading = false } = {}) {
-  if (!adminMiniaturesStatus) return;
-  const text = message || "";
-  adminMiniaturesStatus.textContent = text;
-  adminMiniaturesStatus.classList.toggle("hidden", !text);
-  adminMiniaturesStatus.classList.toggle("loading", Boolean(text && loading));
-}
-
-function clearAdminMiniaturesSelection() {
-  if (adminMiniaturesTitle) adminMiniaturesTitle.textContent = "Aucun dossier sélectionné";
-  if (adminMiniaturesSubtitle) {
-    adminMiniaturesSubtitle.textContent = "Sélectionne un client à gauche pour accéder à ses miniatures.";
-  }
-  if (adminMiniaturesDriveLink) {
-    adminMiniaturesDriveLink.setAttribute("aria-disabled", "true");
-    adminMiniaturesDriveLink.removeAttribute("href");
-  }
-  if (adminMiniaturesGrid) {
-    adminMiniaturesGrid.classList.add("hidden");
-    adminMiniaturesGrid.innerHTML = "";
-  }
-  setAdminMiniaturesStatus("Sélectionne un dossier client pour afficher les miniatures.");
-}
-
-function renderAdminMiniaturesDirectory(filter = "") {
-  if (!adminMiniaturesClientList) return;
-  const term = filter.trim().toLowerCase();
-  const entries = adminDriveDirectory
-    .filter(entry => !term || entry.label.toLowerCase().includes(term) || entry.slug.includes(term))
-    .sort((a, b) => a.label.localeCompare(b.label, "fr"));
-
-  adminMiniaturesClientList.innerHTML = "";
-  if (adminMiniaturesCountEl) {
-    adminMiniaturesCountEl.textContent = entries.length
-      ? `${entries.length} dossier${entries.length > 1 ? "s" : ""}`
-      : "0 dossier";
-  }
-
-  if (!entries.length) {
-    const empty = document.createElement("p");
-    empty.className = "admin-miniatures-empty";
-    empty.textContent = adminDriveDirectoryLoaded
-      ? "Aucun dossier ne correspond à ta recherche."
-      : "Aucun dossier Drive détecté.";
-    adminMiniaturesClientList.appendChild(empty);
-    return;
-  }
-
-  entries.forEach(entry => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "admin-miniatures-client";
-    if (entry.slug === adminDriveActiveSlug) button.classList.add("active");
-    button.innerHTML = `<strong>${entry.label}</strong><span>${entry.slug}</span>`;
-    button.addEventListener("click", () => selectAdminDriveClient(entry.slug));
-    adminMiniaturesClientList.appendChild(button);
-  });
-}
-
-async function loadAdminDriveDirectory(force = false) {
-  if (!adminMiniaturesView) return;
-  if (adminDriveDirectoryLoading) return;
-  if (adminDriveDirectoryLoaded && !force) return;
-
-  adminDriveDirectoryLoading = true;
-  setAdminMiniaturesStatus("Chargement des dossiers Drive…", { loading: true });
-
-  try {
-    const response = await fetch("/api/client/list-root");
-    if (!response.ok) throw new Error("Impossible de récupérer les dossiers Drive.");
-    const payload = await response.json();
-    adminDriveDirectory = Array.isArray(payload)
-      ? payload
-        .map(buildDriveDirectoryEntry)
-        .filter(Boolean)
-        .sort((a, b) => a.label.localeCompare(b.label, "fr"))
-      : [];
-    adminDriveDirectoryLoaded = true;
-    renderAdminMiniaturesDirectory(getAdminMiniaturesFilter());
-    if (!adminDriveDirectory.length) {
-      setAdminMiniaturesStatus("Aucun dossier Drive détecté.");
-    } else if (!adminDriveActiveSlug) {
-      setAdminMiniaturesStatus("Sélectionne un dossier client pour afficher les miniatures.");
-    }
-  } catch (error) {
-    console.error("Erreur lors du chargement des dossiers Drive", error);
-    setAdminMiniaturesStatus(
-      (error && error.message) || "Impossible de charger les dossiers Drive."
-    );
-  } finally {
-    adminDriveDirectoryLoading = false;
-  }
-}
-
-async function selectAdminDriveClient(slug, { force = false } = {}) {
-  if (!slug) return;
-  const entry = adminDriveDirectory.find(item => item.slug === slug);
-  if (!entry) {
-    setAdminMiniaturesStatus("Dossier client introuvable.");
-    return;
-  }
-  adminDriveActiveSlug = slug;
-  renderAdminMiniaturesDirectory(getAdminMiniaturesFilter());
-  if (adminMiniaturesTitle) adminMiniaturesTitle.textContent = entry.label;
-  if (adminMiniaturesDriveLink) {
-    if (entry.driveUrl) {
-      adminMiniaturesDriveLink.href = entry.driveUrl;
-      adminMiniaturesDriveLink.removeAttribute("aria-disabled");
-    } else {
-      adminMiniaturesDriveLink.setAttribute("aria-disabled", "true");
-      adminMiniaturesDriveLink.removeAttribute("href");
-    }
-  }
-
-  const cached = adminDriveCache.get(slug);
-  if (cached && !force) {
-    renderAdminDriveFiles(entry, cached);
-    return;
-  }
-
-  setAdminMiniaturesStatus("Chargement des miniatures…", { loading: true });
-  try {
-    const payload = await fetchDriveFilesForClient(slug);
-    adminDriveCache.set(slug, payload);
-    renderAdminDriveFiles(entry, payload);
-  } catch (error) {
-    console.error(`Impossible de charger les miniatures Drive pour ${slug}`, error);
-    setAdminMiniaturesStatus("Impossible de charger les miniatures de ce client.");
-    if (adminMiniaturesGrid) {
-      adminMiniaturesGrid.innerHTML = "";
-      adminMiniaturesGrid.classList.add("hidden");
-    }
-  }
-}
-
-function renderAdminDriveFiles(entry, payload) {
-  if (!adminMiniaturesGrid) return;
-  const files = Array.isArray(payload && payload.files) ? payload.files : [];
-  const folderName = (payload && payload.folderName) || entry.rawName || entry.label;
-  if (adminMiniaturesSubtitle) {
-    adminMiniaturesSubtitle.textContent = folderName || entry.label;
-  }
-  if (!files.length) {
-    adminMiniaturesGrid.innerHTML = "";
-    adminMiniaturesGrid.classList.remove("hidden");
-    renderFolderView([], {
-      container: adminMiniaturesGrid,
-      emptyLabel: "Ce dossier Drive ne contient aucune miniature."
-    });
-    setAdminMiniaturesStatus("Aucune miniature détectée pour ce dossier.");
-    return;
-  }
-  renderFolderView(files, {
-    container: adminMiniaturesGrid,
-    emptyLabel: "Ce dossier Drive ne contient aucune miniature."
-  });
-  adminMiniaturesGrid.classList.remove("hidden");
-  const countLabel = `${files.length} miniature${files.length > 1 ? "s" : ""} synchronisée${files.length > 1 ? "s" : ""}.`;
-  setAdminMiniaturesStatus(countLabel);
-}
-
-function ensureAdminMiniaturesDirectory(force = false) {
-  if (!adminMiniaturesView) return Promise.resolve();
-  return loadAdminDriveDirectory(force);
-}
-
-function refreshAdminMiniaturesDirectory() {
-  adminDriveCache.clear();
-  const loadPromise = ensureAdminMiniaturesDirectory(true);
-  if (!loadPromise || typeof loadPromise.then !== "function") {
-    clearAdminMiniaturesSelection();
-    return;
-  }
-  loadPromise
-    .then(() => {
-      if (adminDriveActiveSlug) {
-        return selectAdminDriveClient(adminDriveActiveSlug, { force: true });
-      }
-      clearAdminMiniaturesSelection();
-      return null;
-    })
-    .catch(error => {
-      console.error("Impossible d’actualiser les dossiers Drive", error);
-    });
-}
-
 const miniaturesExternalLink = document.getElementById("miniaturesExternalLink");
 const miniaturesFolderList = document.getElementById("miniaturesFolderList");
 const miniaturesEmptyState = document.getElementById("miniaturesEmptyState");
@@ -1789,7 +1495,6 @@ function configureChartsTheme() {
 }
 
 configureChartsTheme();
-configureExtensionCta();
 
 function setClientView(view) {
   if (!clientViewSections.length) return;
@@ -1841,22 +1546,6 @@ function configureClientNavigation() {
     });
   }
   setClientView(activeClientView);
-}
-
-function configureExtensionCta() {
-  if (extensionInstallBtn) {
-    extensionInstallBtn.addEventListener("click", () => {
-      window.open(MINIADS_EXTENSION_INSTALL_URL, "_blank", "noopener,noreferrer");
-    });
-  }
-  if (extensionInstallBtnInline) {
-    extensionInstallBtnInline.addEventListener("click", () => {
-      window.open(MINIADS_EXTENSION_INSTALL_URL, "_blank", "noopener,noreferrer");
-    });
-  }
-  if (extensionDocBtn && extensionDocBtn.href === "#") {
-    extensionDocBtn.href = MINIADS_EXTENSION_INSTALL_URL;
-  }
 }
 
 function updateMiniaturesLibrary(config) {
@@ -1977,18 +1666,6 @@ function applyDriveFolderSelection(folder, index) {
 configureClientNavigation();
 updateMiniaturesLibrary(currentClientConfig);
 
-if (adminMiniaturesSearchInput) {
-  adminMiniaturesSearchInput.addEventListener("input", event => {
-    renderAdminMiniaturesDirectory(event.target.value);
-  });
-}
-
-if (adminMiniaturesRefreshBtn) {
-  adminMiniaturesRefreshBtn.addEventListener("click", () => {
-    refreshAdminMiniaturesDirectory();
-  });
-}
-
 const ADMIN_VIEW_COPY = {
   dashboard: {
     title: "Dashboard",
@@ -2033,9 +1710,6 @@ function setAdminView(view) {
   }
   if (view === "clients") {
     ensureTableInHost(adminTableHost);
-  }
-  if (view === "miniatures") {
-    ensureAdminMiniaturesDirectory();
   }
 }
 
@@ -3707,7 +3381,6 @@ async function loadAirtable({ apiKey, baseId, tableId, view, filterByFormula } =
         if (clientRow) {
           const ytUrl = extractFirstUrl(clientRow[fields.youtubeField]);
           if (ytUrl) {
-            console.log("Auto-connecting YouTube:", ytUrl);
             const input = document.getElementById("youtubeUrlInput");
             const form = document.getElementById("youtubeAnalyzeForm");
             if (input && form && !input.value) {
