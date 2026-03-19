@@ -1770,12 +1770,6 @@ function setClientStats({ total, monthly, lastDate, loading = false } = {}) {
   if (monthlyDeliveryValueEl) monthlyDeliveryValueEl.textContent = monthlyValue;
   if (lastDeliveredEl) lastDeliveredEl.textContent = lastValue;
   if (heroLastDeliveryEl) heroLastDeliveryEl.textContent = lastValue;
-
-  // Update trend for total thumbs (show monthly as context)
-  const totalThumbsTrend = document.getElementById("totalThumbsTrend");
-  if (totalThumbsTrend && Number.isFinite(monthly) && monthly > 0) {
-    totalThumbsTrend.textContent = `+${monthlyValue} this month`;
-  }
 }
 
 function formatCurrency(value, options = {}) {
@@ -3825,8 +3819,9 @@ function populateRecentWork(rows, imageField, titleField, statusField, creatorFi
   // Get rows that have images, take most recent 3
   const rowsWithImages = imageField
     ? rows.filter(r => {
-        const img = (r[imageField] || "").trim();
-        return img && (img.startsWith("http") || img.startsWith("data:"));
+        const raw = (r[imageField] || "").trim();
+        const firstUrl = raw.includes(",") ? raw.split(",")[0].trim() : raw;
+        return firstUrl && (firstUrl.startsWith("http") || firstUrl.startsWith("data:"));
       }).slice(0, 3)
     : [];
 
@@ -3841,7 +3836,9 @@ function populateRecentWork(rows, imageField, titleField, statusField, creatorFi
     const card = document.createElement("article");
     card.className = "ov-work-card";
 
-    const imgUrl = imageField ? (r[imageField] || "").trim() : "";
+    // Image field may contain multiple URLs comma-separated (from Airtable attachments)
+    const rawImg = imageField ? (r[imageField] || "").trim() : "";
+    const imgUrl = rawImg.includes(",") ? rawImg.split(",")[0].trim() : rawImg;
     const title = titleField ? (r[titleField] || "Untitled") : "Untitled";
     const status = statusField ? (r[statusField] || "").trim().toLowerCase() : "";
     const creator = creatorField ? (r[creatorField] || "") : "";
@@ -3887,87 +3884,3 @@ function populateRecentWork(rows, imageField, titleField, statusField, creatorFi
   }
 }
 
-// ===== Overview: CTR Evolution Chart =====
-let ctrChart = null;
-
-function initCtrChart() {
-  const canvas = document.getElementById("ctrEvolutionChart");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-
-  // Sample data — will be replaced by real data when available
-  const labels30 = ["MAY 01", "MAY 07", "MAY 14", "MAY 21", "MAY 28"];
-  const data30 = [6.2, 5.8, 7.1, 8.0, 8.4];
-  const labels7 = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const data7 = [7.8, 8.1, 7.5, 8.3, 8.6, 8.2, 8.4];
-
-  function buildChart(labels, data) {
-    if (ctrChart) ctrChart.destroy();
-    ctrChart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          data,
-          borderColor: "#ff991c",
-          backgroundColor: "rgba(255, 153, 28, 0.06)",
-          borderWidth: 2.5,
-          pointRadius: 0,
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: "#ff991c",
-          pointHoverBorderColor: "#ffffff",
-          pointHoverBorderWidth: 2,
-          tension: 0.4,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: "#1a1a1a",
-            titleFont: { family: "Inter", size: 12 },
-            bodyFont: { family: "Inter", size: 13, weight: "600" },
-            padding: 10,
-            cornerRadius: 8,
-            callbacks: {
-              label: (ctx) => `CTR: ${ctx.parsed.y}%`
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { font: { family: "Inter", size: 11, weight: "500" }, color: "#a1a1aa" },
-            border: { display: false }
-          },
-          y: {
-            display: false,
-            beginAtZero: false
-          }
-        },
-        interaction: { intersect: false, mode: "index" }
-      }
-    });
-  }
-
-  buildChart(labels30, data30);
-
-  // Toggle buttons
-  const toggleGroup = document.getElementById("ctrRangeToggle");
-  if (toggleGroup) {
-    toggleGroup.addEventListener("click", (e) => {
-      const btn = e.target.closest(".ov-toggle-btn");
-      if (!btn) return;
-      toggleGroup.querySelectorAll(".ov-toggle-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      const range = btn.dataset.range;
-      if (range === "7") buildChart(labels7, data7);
-      else buildChart(labels30, data30);
-    });
-  }
-}
-
-document.addEventListener("DOMContentLoaded", initCtrChart);
