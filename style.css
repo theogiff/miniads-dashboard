@@ -2449,7 +2449,8 @@ body.admin-mode .foot {
 }
 
 .extension-view {
-  padding: 32px 0 12px;
+  padding: 0;
+  gap: 0;
 }
 
 .extension-hero {

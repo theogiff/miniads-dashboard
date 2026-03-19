@@ -137,74 +137,10 @@
           </div>
         </section>
 
-        <section class="client-view extension-view" id="clientExtensionView" data-client-view="extension-miniads"
-          aria-labelledby="extensionTitle">
-          <div class="extension-hero card">
-            <div class="extension-hero-text">
-              <span class="extension-pill">Extension Chrome</span>
-              <h2 id="extensionTitle">Installer l’extension Miniads</h2>
-              <p class="extension-subtitle">
-                Testez vos miniatures directement dans un faux feed YouTube, partagez vos essais et gagnez du temps sur
-                vos validations.
-              </p>
-              <ul class="extension-list">
-                <li>Précharge vos visuels depuis “Mes miniatures”.</li>
-                <li>Recherche de chaînes YouTube intégrée.</li>
-                <li>Affichage desktop, mobile et suggestions.</li>
-              </ul>
-              <div class="extension-actions">
-                <button type="button" class="btn extension-btn" id="extensionInstallBtn">Installer l’extension</button>
-                <a class="btn btn-secondary extension-btn-secondary" id="extensionDocBtn"
-                  href="./miniads-claude/preview.html" target="_blank" rel="noopener">Accéder à l’extension</a>
-              </div>
-            </div>
-            <div class="extension-hero-visual">
-              <div class="extension-visual-blob"></div>
-              <img src="./logo.svg" alt="Logo Miniads" class="extension-logo">
-            </div>
-          </div>
-
-          <div class="extension-body">
-            <div class="extension-grid">
-              <article class="extension-card">
-                <div class="extension-card-icon">⚡️</div>
-                <h3>Gain de temps</h3>
-                <p>Ouvrez le feed d’un clic depuis “Mes miniatures”, sans télécharger ni recharger vos visuels.</p>
-              </article>
-              <article class="extension-card">
-                <div class="extension-card-icon">🔍</div>
-                <h3>Recherche chaîne YouTube</h3>
-                <p>Saisissez ou sélectionnez vos chaînes pour tester vos thumbnails aux côtés de contenus réels.</p>
-              </article>
-              <article class="extension-card">
-                <div class="extension-card-icon">🖥️</div>
-                <h3>Multi-contextes</h3>
-                <p>Basculer entre desktop, mobile et suggestions pour vérifier l’impact partout.</p>
-              </article>
-              <article class="extension-card">
-                <div class="extension-card-icon">📊</div>
-                <h3>Prêt pour vos clients</h3>
-                <p>Montrez une preview “comme sur YouTube” pour valider plus vite vos créations.</p>
-              </article>
-            </div>
-
-            <div class="extension-steps card">
-              <div class="extension-steps-header">
-                <h3>Comment l’installer ?</h3>
-                <p>Suivez ces étapes (2 minutes) et testez votre prochaine miniature.</p>
-              </div>
-              <ol class="extension-steps-list">
-                <li>Ouvrez le Chrome Web Store via le bouton “Installer l’extension”.</li>
-                <li>Ajoutez l’extension Miniads et épinglez-la dans Chrome.</li>
-                <li>Dans “Mes miniatures”, cliquez sur “Voir sur le feed YouTube” pour précharger votre visuel.</li>
-              </ol>
-              <div class="extension-inline-cta">
-                <button type="button" class="btn extension-btn" id="extensionInstallBtnInline">Installer
-                  maintenant</button>
-                <span class="extension-note">Besoin d’aide ? contact@miniads.fr</span>
-              </div>
-            </div>
-          </div>
+        <section class=”client-view extension-view” id=”clientExtensionView” data-client-view=”extension-miniads”
+          aria-labelledby=”extensionTitle”>
+          <iframe id=”previewIframe” src=”./miniads-claude/preview.html”
+            style=”width:100%;height:calc(100vh - 20px);border:none;border-radius:12px;”></iframe>
         </section>
 
         <section class="client-view youtube-view" id="clientYoutubeView" data-client-view="youtube-analysis"
