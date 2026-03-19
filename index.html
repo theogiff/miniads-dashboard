@@ -67,69 +67,49 @@
     <div class="client-main">
       <header class="topbar">
         <div class="topbar-left">
-          <div class="topbar-heading">
-            <h1 id="clientTitle">Tableau de bord</h1>
-          </div>
+          <h1 class="topbar-title" id="clientTitle">Tableau de bord</h1>
         </div>
         <div class="topbar-right">
-          <span class="topbar-name hidden" id="clientBadge"></span>
+          <div class="topbar-user" id="clientBadge">
+            <div class="topbar-user-avatar" id="topbarAvatar">?</div>
+            <span class="topbar-user-name hidden" id="topbarName"></span>
+          </div>
         </div>
       </header>
 
       <main class="container client-content">
         <div class="client-view active" id="clientDashboardView" data-client-view="dashboard">
 
-          <!-- Welcome Hero -->
-          <section class="dash-welcome">
-            <div class="dash-welcome-content">
-              <span class="dash-welcome-pill" id="heroDate">Espace client</span>
-              <h2 class="dash-welcome-title" id="clientGreeting">Bienvenue sur votre espace</h2>
-              <p class="dash-welcome-subtitle">Suivez vos miniatures, previsualisez-les sur YouTube et analysez vos performances.</p>
-            </div>
-            <div class="dash-welcome-visual">
-              <img src="./logo.svg" alt="" class="dash-welcome-logo">
+          <section class="dash-hero">
+            <div class="dash-hero-content">
+              <p class="dash-hero-greeting" id="clientGreeting">Bienvenue</p>
+              <h2 class="dash-hero-title">Votre espace miniatures</h2>
+              <p class="dash-hero-desc">Retrouvez vos commandes, vos livrables et previewez vos miniatures sur YouTube.</p>
             </div>
           </section>
 
-          <!-- KPI Cards -->
-          <div class="dash-kpi-row">
-            <article class="dash-kpi">
-              <div class="dash-kpi-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-              </div>
-              <div class="dash-kpi-data">
-                <span class="dash-kpi-value" id="totalThumbs">—</span>
-                <span class="dash-kpi-label">Miniatures totales</span>
-              </div>
+          <div class="dash-stats">
+            <article class="dash-stat">
+              <span class="dash-stat-value" id="totalThumbs">&mdash;</span>
+              <span class="dash-stat-label">Miniatures totales</span>
             </article>
-            <article class="dash-kpi">
-              <div class="dash-kpi-icon dash-kpi-icon-green">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-              </div>
-              <div class="dash-kpi-data">
-                <span class="dash-kpi-value" id="deliveredThisMonth">—</span>
-                <span class="dash-kpi-label">Livrees ce mois</span>
-              </div>
+            <article class="dash-stat">
+              <span class="dash-stat-value" id="deliveredThisMonth">&mdash;</span>
+              <span class="dash-stat-label">Livrees ce mois</span>
             </article>
-            <article class="dash-kpi">
-              <div class="dash-kpi-icon dash-kpi-icon-blue">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
-              </div>
-              <div class="dash-kpi-data">
-                <span class="dash-kpi-value" id="lastDelivered">—</span>
-                <span class="dash-kpi-label">Derniere livraison</span>
-              </div>
+            <article class="dash-stat">
+              <span class="dash-stat-value" id="lastDelivered">&mdash;</span>
+              <span class="dash-stat-label">Derniere livraison</span>
             </article>
           </div>
 
-          <!-- History Table -->
-          <section class="dash-section">
-            <div class="dash-section-header">
-              <h3>Votre suivi</h3>
-              <span class="dash-section-subtitle">Historique de vos commandes de miniatures</span>
+          <section class="dash-table-section">
+            <div class="dash-table-header">
+              <h3>Suivi des commandes</h3>
             </div>
             <div id="clientTableHost" class="table-host"></div>
           </section>
+
         </div>
 
         <section class="client-view miniatures-view" id="clientMiniaturesView" data-client-view="miniatures"
