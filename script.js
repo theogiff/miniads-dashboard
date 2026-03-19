@@ -90,6 +90,11 @@ function extractFirstUrl(value) {
 function flattenAirtableValue(value) {
   if (value == null) return "";
   if (Array.isArray(value)) {
+    // For attachment arrays, extract image URLs specifically
+    const urls = value
+      .filter(item => item && typeof item === "object" && typeof item.url === "string")
+      .map(item => item.url);
+    if (urls.length > 0) return urls.join(", ");
     return value
       .map(flattenAirtableValue)
       .filter(Boolean)
@@ -3809,58 +3814,82 @@ function populateRecentActivity(rows, titleField, statusField, creatorField, dat
 }
 
 // ===== Overview: Populate Recent Work from Airtable =====
+function extractFirstImageUrl(rawValue) {
+  if (!rawValue) return "";
+  const str = String(rawValue).trim();
+  // Try to find the first http(s) URL in the string
+  const match = str.match(/https?:\/\/[^\s,]+/);
+  return match ? match[0] : "";
+}
+
 function populateRecentWork(rows, imageField, titleField, statusField, creatorField) {
   const grid = document.getElementById("recentWorkGrid");
   if (!grid) return;
 
-  // Keep the "New Request" card
   const newRequestCard = document.getElementById("newRequestCard");
 
-  // Get rows that have images, take most recent 3
-  const rowsWithImages = imageField
-    ? rows.filter(r => {
-        const raw = (r[imageField] || "").trim();
-        const firstUrl = raw.includes(",") ? raw.split(",")[0].trim() : raw;
-        return firstUrl && (firstUrl.startsWith("http") || firstUrl.startsWith("data:"));
-      }).slice(0, 3)
-    : [];
+  // Debug: log what we have
+  if (imageField) {
+    console.log("[RecentWork] imageField:", imageField, "| sample value:", rows[0] ? rows[0][imageField] : "no rows");
+  } else {
+    console.warn("[RecentWork] No imageField detected. All keys:", rows[0] ? Object.keys(rows[0]) : []);
+  }
 
-  // If no images, show rows without images (just titles)
-  const recentRows = rowsWithImages.length > 0
-    ? rowsWithImages
-    : rows.slice(0, 3);
+  // Get rows with images (up to 3)
+  const recentRows = rows.slice(0, 3);
 
   grid.innerHTML = "";
 
-  recentRows.forEach((r, i) => {
+  recentRows.forEach((r) => {
     const card = document.createElement("article");
     card.className = "ov-work-card";
 
-    // Image field may contain multiple URLs comma-separated (from Airtable attachments)
-    const rawImg = imageField ? (r[imageField] || "").trim() : "";
-    const imgUrl = rawImg.includes(",") ? rawImg.split(",")[0].trim() : rawImg;
-    const title = titleField ? (r[titleField] || "Untitled") : "Untitled";
+    // Try imageField first, then scan all fields for an image URL
+    let imgUrl = "";
+    if (imageField) {
+      imgUrl = extractFirstImageUrl(r[imageField]);
+    }
+    if (!imgUrl) {
+      // Fallback: look for any field with an image URL
+      for (const key of Object.keys(r)) {
+        const val = String(r[key] || "");
+        if (/https?:\/\/.*\.(png|jpe?g|webp|gif)/i.test(val) || /airtableusercontent\.com/i.test(val) || /drive\.google\.com/i.test(val)) {
+          imgUrl = extractFirstImageUrl(val);
+          if (imgUrl) break;
+        }
+      }
+    }
+
+    const title = titleField ? (r[titleField] || "Sans titre") : "Sans titre";
     const status = statusField ? (r[statusField] || "").trim().toLowerCase() : "";
     const creator = creatorField ? (r[creatorField] || "") : "";
 
-    // Determine badge
+    // Badge
     let badgeClass = "ov-badge-live";
     let badgeText = "LIVE";
     const norm = status.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     if (norm.includes("draft") || norm.includes("brouillon")) {
       badgeClass = "ov-badge-draft"; badgeText = "DRAFT";
     } else if (norm.includes("test") || norm.includes("ab")) {
-      badgeClass = "ov-badge-testing"; badgeText = "TESTING";
+      badgeClass = "ov-badge-testing"; badgeText = "A/B TEST";
     } else if (norm.includes("archiv")) {
       badgeClass = "ov-badge-archived"; badgeText = "ARCHIVED";
     } else if (norm.includes("en cours") || norm.includes("progress") || norm.includes("pending")) {
-      badgeClass = "ov-badge-draft"; badgeText = "IN PROGRESS";
+      badgeClass = "ov-badge-draft"; badgeText = "EN COURS";
     } else if (norm.includes("livr") || norm.includes("done") || norm.includes("realis") || norm.includes("termin") || norm.includes("complete")) {
       badgeClass = "ov-badge-live"; badgeText = "LIVE";
     }
 
-    const thumbHtml = imgUrl && imgUrl.startsWith("http")
-      ? `<img src="${imgUrl}" alt="${title}" loading="lazy">`
+    // Convert Google Drive link to direct image if possible
+    if (imgUrl.includes("drive.google.com") && imgUrl.includes("/d/")) {
+      const fileIdMatch = imgUrl.match(/\/d\/([^/]+)/);
+      if (fileIdMatch) {
+        imgUrl = `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w600`;
+      }
+    }
+
+    const thumbHtml = imgUrl
+      ? `<img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div class="ov-work-thumb-placeholder" style="display:none"></div>`
       : `<div class="ov-work-thumb-placeholder"></div>`;
 
     card.innerHTML = `
@@ -3878,7 +3907,6 @@ function populateRecentWork(rows, imageField, titleField, statusField, creatorFi
     grid.appendChild(card);
   });
 
-  // Re-append the "New Request" card
   if (newRequestCard) {
     grid.appendChild(newRequestCard);
   }
