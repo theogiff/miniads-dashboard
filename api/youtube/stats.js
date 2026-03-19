@@ -81,7 +81,7 @@ export default async function handler(req, res) {
         let allVideoIds = [];
         if (uploadsPlaylistId) {
             let nextPageToken = undefined;
-            for (let page = 0; page < 10; page++) {
+            for (let page = 0; page < 3; page++) {
                 const playlistRes = await youtube.playlistItems.list({
                     part: "contentDetails",
                     playlistId: uploadsPlaylistId,
