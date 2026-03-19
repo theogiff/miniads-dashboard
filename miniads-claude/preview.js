@@ -1,3 +1,28 @@
+// Shim chrome.storage pour fonctionner hors extension (navigateur web)
+if (typeof chrome === 'undefined' || !chrome.storage) {
+  window.chrome = window.chrome || {};
+  chrome.storage = {
+    local: {
+      get(keys, cb) {
+        try {
+          const data = JSON.parse(localStorage.getItem('miniads_preview') || '{}');
+          cb(data);
+        } catch(e) { cb({}); }
+      },
+      set(obj) {
+        try {
+          const data = JSON.parse(localStorage.getItem('miniads_preview') || '{}');
+          Object.assign(data, obj);
+          localStorage.setItem('miniads_preview', JSON.stringify(data));
+        } catch(e) {}
+      },
+      clear() {
+        localStorage.removeItem('miniads_preview');
+      }
+    }
+  };
+}
+
 // Configuration de la clé API YouTube
 const YOUTUBE_API_KEY = 'AIzaSyDekxhLAwMVLC56TRRIWPZ-gHdfprd4Ftk';
 const incomingParams = getIncomingParams();
