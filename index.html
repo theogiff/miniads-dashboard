@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css?v=17" />
+  <link rel="stylesheet" href="./style.css?v=18" />
   <script>
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
@@ -399,29 +399,32 @@
             </div>
           </div>
 
-          <!-- Current plan -->
-          <div class="bill-plan-card">
+          <!-- Pack actuel (rempli dynamiquement depuis Airtable) -->
+          <div class="bill-plan-card" id="billPlanCard">
             <div class="bill-plan-info">
-              <span class="bill-plan-badge">Plan actuel</span>
-              <h3 class="bill-plan-name">Miniads Pro</h3>
-              <p class="bill-plan-desc">Miniatures illimitées, support prioritaire, accès galerie Drive.</p>
+              <span class="bill-plan-badge" id="billPlanBadge">Chargement...</span>
+              <h3 class="bill-plan-name" id="billPlanName">—</h3>
+              <p class="bill-plan-desc" id="billPlanDesc">Récupération des informations de ton pack...</p>
             </div>
             <div class="bill-plan-price">
-              <span class="bill-price-value">Sur devis</span>
-              <a href="mailto:contact@miniads.fr?subject=Billing" class="btn-outline">Contacter</a>
+              <div class="bill-remaining" id="billRemaining">
+                <span class="bill-remaining-value">—</span>
+                <span class="bill-remaining-label">miniatures restantes</span>
+              </div>
+              <a href="mailto:contact@miniads.fr?subject=Upgrade+Pack" class="btn-primary-sm">Changer de pack</a>
             </div>
           </div>
 
-          <!-- Factures Stripe -->
+          <!-- Historique commandes (depuis table Suivi miniatures) -->
           <div class="ov-card">
-            <div class="ov-card-header"><h3>Factures</h3></div>
+            <div class="ov-card-header"><h3>Historique des commandes</h3></div>
             <div class="ov-table-wrap">
               <table class="yt-table">
                 <thead>
-                  <tr><th>Date</th><th>Description</th><th>Montant</th><th>Statut</th><th></th></tr>
+                  <tr><th>Titre</th><th>Date</th><th>Montant</th><th>Facturation</th></tr>
                 </thead>
                 <tbody id="billingTableBody">
-                  <tr><td colspan="5" class="empty" id="billingEmpty">Chargement des factures...</td></tr>
+                  <tr><td colspan="4" class="empty" id="billingEmpty">Chargement...</td></tr>
                 </tbody>
               </table>
             </div>

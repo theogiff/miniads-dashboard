@@ -1060,6 +1060,28 @@ body.admin-mode .foot {
   font-size: 0.88rem;
 }
 
+.bill-remaining {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.bill-remaining-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.bill-remaining-label {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
 .bill-pdf-link {
   display: inline-flex;
   align-items: center;
@@ -1987,6 +2009,11 @@ button.ov-work-thumb,
 .status-chip[data-status*="bloque"] {
   background: rgba(255, 77, 97, 0.16);
   color: #d04050;
+}
+
+.status-chip[data-status="status-paid"] {
+  background: rgba(31, 157, 92, 0.12);
+  color: #1f9d5c;
 }
 
 .empty {
