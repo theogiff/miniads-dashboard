@@ -10,7 +10,8 @@
 
 .req-tally-embed iframe {
   width: 100%;
-  min-height: 500px;
+  height: calc(100vh - 180px);
+  min-height: 700px;
   border: 0;
 }
 
