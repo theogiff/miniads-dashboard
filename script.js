@@ -624,6 +624,10 @@ function renderRows(rows) {
     lastDate: lastDelivered
   });
 
+  // Populate Overview sections from Airtable rows
+  populateRecentWork(datasetToRender, imageField, titleField, statusField, creatorField);
+  populateRecentActivity(datasetToRender, titleField, statusField, creatorField, dateField, requestDateField, creationDateField);
+
   if (summaryBody) {
     if (!creatorField && !titleField) {
       summaryBody.innerHTML = `<tr><td colspan="5" class="empty">Colonnes nécessaires introuvables.</td></tr>`;
@@ -1766,6 +1770,12 @@ function setClientStats({ total, monthly, lastDate, loading = false } = {}) {
   if (monthlyDeliveryValueEl) monthlyDeliveryValueEl.textContent = monthlyValue;
   if (lastDeliveredEl) lastDeliveredEl.textContent = lastValue;
   if (heroLastDeliveryEl) heroLastDeliveryEl.textContent = lastValue;
+
+  // Update trend for total thumbs (show monthly as context)
+  const totalThumbsTrend = document.getElementById("totalThumbsTrend");
+  if (totalThumbsTrend && Number.isFinite(monthly) && monthly > 0) {
+    totalThumbsTrend.textContent = `+${monthlyValue} this month`;
+  }
 }
 
 function formatCurrency(value, options = {}) {
@@ -3739,6 +3749,143 @@ function initYoutubeAnalysis() {
 
 // Init when DOM loaded
 document.addEventListener("DOMContentLoaded", initYoutubeAnalysis);
+
+// ===== Overview: Populate Recent Activity from Airtable =====
+function populateRecentActivity(rows, titleField, statusField, creatorField, dateField, requestDateField, creationDateField) {
+  const list = document.getElementById("recentActivityList");
+  if (!list || !rows.length) return;
+
+  const recent = rows.slice(0, 4);
+  list.innerHTML = "";
+
+  recent.forEach(r => {
+    const title = titleField ? (r[titleField] || "Untitled") : "Untitled";
+    const creator = creatorField ? (r[creatorField] || "") : "";
+    const status = statusField ? (r[statusField] || "").trim() : "";
+    const norm = status.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+    // Pick icon/color based on status
+    let iconClass = "ov-activity-icon-upload";
+    let label = "New Thumbnail";
+    let iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+
+    if (norm.includes("livr") || norm.includes("done") || norm.includes("complete") || norm.includes("termin")) {
+      iconClass = "ov-activity-icon-approved";
+      label = "Thumbnail Delivered";
+      iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+    } else if (norm.includes("en cours") || norm.includes("progress") || norm.includes("revision")) {
+      iconClass = "ov-activity-icon-edit";
+      label = "In Progress";
+      iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    } else if (norm.includes("feedback") || norm.includes("retour") || norm.includes("modif")) {
+      iconClass = "ov-activity-icon-feedback";
+      label = "Feedback Received";
+      iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    }
+
+    // Date
+    const rawDate = r[creationDateField] || r[dateField] || r[requestDateField] || r["created_time"] || "";
+    let timeAgo = "";
+    if (rawDate) {
+      const dt = new Date(rawDate);
+      if (!isNaN(dt)) {
+        const diffMs = Date.now() - dt.getTime();
+        const diffH = Math.floor(diffMs / 3600000);
+        const diffD = Math.floor(diffMs / 86400000);
+        if (diffH < 1) timeAgo = "Just now";
+        else if (diffH < 24) timeAgo = `${diffH}h ago`;
+        else if (diffD === 1) timeAgo = "Yesterday";
+        else if (diffD < 30) timeAgo = `${diffD} days ago`;
+        else timeAgo = dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+    }
+
+    const item = document.createElement("div");
+    item.className = "ov-activity-item";
+    item.innerHTML = `
+      <div class="ov-activity-icon ${iconClass}">${iconSvg}</div>
+      <div class="ov-activity-text">
+        <strong>${label}</strong>
+        <span>${title}${creator ? ` — ${creator}` : ""}</span>
+        ${timeAgo ? `<time>${timeAgo}</time>` : ""}
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+// ===== Overview: Populate Recent Work from Airtable =====
+function populateRecentWork(rows, imageField, titleField, statusField, creatorField) {
+  const grid = document.getElementById("recentWorkGrid");
+  if (!grid) return;
+
+  // Keep the "New Request" card
+  const newRequestCard = document.getElementById("newRequestCard");
+
+  // Get rows that have images, take most recent 3
+  const rowsWithImages = imageField
+    ? rows.filter(r => {
+        const img = (r[imageField] || "").trim();
+        return img && (img.startsWith("http") || img.startsWith("data:"));
+      }).slice(0, 3)
+    : [];
+
+  // If no images, show rows without images (just titles)
+  const recentRows = rowsWithImages.length > 0
+    ? rowsWithImages
+    : rows.slice(0, 3);
+
+  grid.innerHTML = "";
+
+  recentRows.forEach((r, i) => {
+    const card = document.createElement("article");
+    card.className = "ov-work-card";
+
+    const imgUrl = imageField ? (r[imageField] || "").trim() : "";
+    const title = titleField ? (r[titleField] || "Untitled") : "Untitled";
+    const status = statusField ? (r[statusField] || "").trim().toLowerCase() : "";
+    const creator = creatorField ? (r[creatorField] || "") : "";
+
+    // Determine badge
+    let badgeClass = "ov-badge-live";
+    let badgeText = "LIVE";
+    const norm = status.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    if (norm.includes("draft") || norm.includes("brouillon")) {
+      badgeClass = "ov-badge-draft"; badgeText = "DRAFT";
+    } else if (norm.includes("test") || norm.includes("ab")) {
+      badgeClass = "ov-badge-testing"; badgeText = "TESTING";
+    } else if (norm.includes("archiv")) {
+      badgeClass = "ov-badge-archived"; badgeText = "ARCHIVED";
+    } else if (norm.includes("en cours") || norm.includes("progress") || norm.includes("pending")) {
+      badgeClass = "ov-badge-draft"; badgeText = "IN PROGRESS";
+    } else if (norm.includes("livr") || norm.includes("done") || norm.includes("realis") || norm.includes("termin") || norm.includes("complete")) {
+      badgeClass = "ov-badge-live"; badgeText = "LIVE";
+    }
+
+    const thumbHtml = imgUrl && imgUrl.startsWith("http")
+      ? `<img src="${imgUrl}" alt="${title}" loading="lazy">`
+      : `<div class="ov-work-thumb-placeholder"></div>`;
+
+    card.innerHTML = `
+      <div class="ov-work-thumb">
+        <span class="ov-work-badge ${badgeClass}">${badgeText}</span>
+        ${thumbHtml}
+      </div>
+      <div class="ov-work-info">
+        <span class="ov-work-title">${title}</span>
+        <div class="ov-work-meta">
+          <span>${creator || "—"}</span>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Re-append the "New Request" card
+  if (newRequestCard) {
+    grid.appendChild(newRequestCard);
+  }
+}
 
 // ===== Overview: CTR Evolution Chart =====
 let ctrChart = null;
