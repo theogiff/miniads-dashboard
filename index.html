@@ -5,12 +5,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css?v=18" />
+  <link rel="stylesheet" href="./css/variables.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/topbar.css">
+  <link rel="stylesheet" href="./css/content.css">
+  <link rel="stylesheet" href="./css/table.css">
+  <link rel="stylesheet" href="./css/overview.css">
+  <link rel="stylesheet" href="./css/miniatures.css">
+  <link rel="stylesheet" href="./css/filters.css">
+  <link rel="stylesheet" href="./css/preview.css">
+  <link rel="stylesheet" href="./css/performance.css">
+  <link rel="stylesheet" href="./css/requests.css">
+  <link rel="stylesheet" href="./css/billing.css">
+  <link rel="stylesheet" href="./css/admin.css">
+  <link rel="stylesheet" href="./css/responsive.css">
   <script>
-    // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -723,7 +734,17 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="./admin-auth.js"></script>
-  <script src="./script.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/dom-selectors.js"></script>
+  <script src="./js/table-render.js"></script>
+  <script src="./js/miniatures.js"></script>
+  <script src="./js/overview-widgets.js"></script>
+  <script src="./js/billing.js"></script>
+  <script src="./js/client-views.js"></script>
+  <script src="./js/admin.js"></script>
+  <script src="./js/youtube-analysis.js"></script>
+  <script src="./js/main.js"></script>
 </body>
 
 </html>
