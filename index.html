@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css?v=10" />
+  <link rel="stylesheet" href="./style.css?v=11" />
   <script>
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
@@ -192,21 +192,31 @@
           <!-- Page header -->
           <div class="page-header">
             <div>
-              <h2 class="page-title" id="miniaturesTitle">Thumbnails</h2>
-              <p class="page-desc" id="miniaturesIntro">Toutes tes miniatures livrées, centralisées depuis Google Drive.</p>
+              <h2 class="page-title" id="miniaturesTitle">Galerie</h2>
+              <p class="page-desc" id="miniaturesIntro">Gère et visualise toutes tes miniatures.</p>
             </div>
             <div class="page-header-actions">
               <div class="mini-switch">
-                <button class="switch-btn active" data-view="folders">Par dossiers</button>
-                <button class="switch-btn" data-view="gallery">Galerie</button>
+                <button class="switch-btn active" data-view="gallery">Grid</button>
+                <button class="switch-btn" data-view="folders">List</button>
               </div>
             </div>
           </div>
 
-          <!-- Miniatures grid (populated by JS: folder-tiles or mini-cards) -->
+          <!-- Filter pills (populated by JS from folder names) -->
+          <div class="th-filters" id="thumbFilters">
+            <button class="th-filter-pill active" data-filter="all">Tout</button>
+          </div>
+
+          <!-- Thumbnails grid (populated by JS) -->
           <div id="miniaturesGrid" class="mini-grid"></div>
 
-          <!-- Legacy Drive embed (hidden by default, used by updateMiniaturesLibrary) -->
+          <!-- Counter + Load more -->
+          <div class="th-footer" id="thumbFooter">
+            <span class="th-counter" id="thumbCounter"></span>
+          </div>
+
+          <!-- Legacy Drive embed (hidden, used by updateMiniaturesLibrary) -->
           <div class="miniatures-content hidden" id="miniaturesContent">
             <article class="miniatures-embed card" id="miniaturesEmbed">
               <div class="miniatures-embed-frame">
@@ -214,18 +224,15 @@
               </div>
               <div class="miniatures-embed-meta">
                 <h3 id="miniaturesEmbedTitle">Dossier principal</h3>
-                <p id="miniaturesEmbedSubtitle">Prévisualise directement ton dossier Drive pour retrouver rapidement ton
-                  historique.</p>
-                <p class="miniatures-embed-hint hidden" id="miniaturesEmbedHint">Impossible d’afficher un aperçu pour ce
-                  dossier. Ouvre-le directement dans Google Drive.</p>
-                <a id="miniaturesExternalLink" class="miniatures-link" href="#" target="_blank" rel="noopener"
-                  aria-disabled="true">Ouvrir dans Google Drive</a>
+                <p id="miniaturesEmbedSubtitle">Prévisualise directement ton dossier Drive pour retrouver rapidement ton historique.</p>
+                <p class="miniatures-embed-hint hidden" id="miniaturesEmbedHint">Impossible d’afficher un aperçu pour ce dossier.</p>
+                <a id="miniaturesExternalLink" class="miniatures-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Ouvrir dans Google Drive</a>
               </div>
             </article>
             <div class="miniatures-folders card" id="miniaturesFolders">
               <div class="miniatures-folders-head">
                 <h3>Dossiers disponibles</h3>
-                <p>Organise tes miniatures par chaîne, campagne ou année et accède-y immédiatement.</p>
+                <p>Organise tes miniatures par chaîne, campagne ou année.</p>
               </div>
               <div id="miniaturesFolderList" class="miniatures-folder-list"></div>
             </div>

@@ -910,15 +910,22 @@ function renderFilesGrid(files = [], { container = miniaturesGrid, emptyLabel } 
 
   if (!files.length) {
     targetGrid.innerHTML = `<div class="miniatures-empty">${emptyLabel || "Aucune miniature pour l’instant."}</div>`;
+    updateThumbFilters([], files);
+    updateThumbCounter(0, 0);
     return;
   }
+
+  // Build filter pills from folder names
+  updateThumbFilters(files, files);
 
   const fragment = document.createDocumentFragment();
 
   files.forEach(file => {
     const card = document.createElement("article");
     card.className = "mini-card";
+    card.dataset.folder = (file.folderName || "").toLowerCase();
 
+    // Thumbnail image
     const thumbWrapper = document.createElement("button");
     thumbWrapper.type = "button";
     thumbWrapper.className = "mini-card-thumb";
@@ -930,72 +937,112 @@ function renderFilesGrid(files = [], { container = miniaturesGrid, emptyLabel } 
     img.src = getMiniatureThumbnail(file.thumbnailLink);
     thumbWrapper.appendChild(img);
 
-    const versionChip = extractVersion(file.name);
-    if (versionChip) {
+    // Folder badge on image
+    const folderLabel = file.folderName || "";
+    if (folderLabel) {
       const chip = document.createElement("span");
       chip.className = "mini-card-chip";
-      chip.textContent = versionChip;
+      chip.textContent = folderLabel;
       thumbWrapper.appendChild(chip);
     }
 
+    // Body: title + meta
     const body = document.createElement("div");
     body.className = "mini-card-body";
 
-    const textWrapper = document.createElement("div");
-    textWrapper.className = "mini-card-text";
-
     const title = document.createElement("h3");
     title.className = "mini-card-title";
-    title.textContent = truncateText(file.name);
+    const cleanName = (file.name || "Sans titre").replace(/\.[^.]+$/, "");
+    title.textContent = cleanName;
     if (file.name) title.title = file.name;
 
-    const meta = document.createElement("p");
+    const meta = document.createElement("div");
     meta.className = "mini-card-meta";
-    const dateSpan = document.createElement("span");
+
+    const folderMeta = document.createElement("div");
+    folderMeta.className = "mini-card-meta-item";
+    folderMeta.innerHTML = `<span class="mini-card-meta-label">Dossier</span><span class="mini-card-meta-value">${folderLabel || "—"}</span>`;
+
+    const dateMeta = document.createElement("div");
+    dateMeta.className = "mini-card-meta-item";
     const formattedDate = formatDate(file.modifiedTime);
-    dateSpan.textContent = formattedDate !== "—" ? `Modifié le ${formattedDate}` : "Date inconnue";
-    const folderSpan = document.createElement("span");
-    folderSpan.textContent = getFolderLabel(file);
-    meta.append(dateSpan, folderSpan);
+    dateMeta.innerHTML = `<span class="mini-card-meta-label">Modifié</span><span class="mini-card-meta-value">${formattedDate}</span>`;
 
-    textWrapper.append(title, meta);
-
-    const actions = document.createElement("div");
-    actions.className = "mini-card-actions";
-
-    const feedBtn = document.createElement("button");
-    feedBtn.type = "button";
-    feedBtn.className = "mini-card-btn mini-card-btn-accent";
-    feedBtn.textContent = "Voir sur le feed YouTube";
-    feedBtn.addEventListener("click", () => openInYoutubeFeed(file, feedBtn));
-    actions.appendChild(feedBtn);
-
-    if (file.webViewLink) {
-      const previewLink = document.createElement("a");
-      previewLink.className = "mini-card-btn mini-card-btn-primary";
-      previewLink.href = file.webViewLink;
-      previewLink.target = "_blank";
-      previewLink.rel = "noopener";
-      previewLink.textContent = "Aperçu";
-      actions.appendChild(previewLink);
-    }
-
-    if (file.webContentLink) {
-      const downloadLink = document.createElement("a");
-      downloadLink.className = "mini-card-btn";
-      downloadLink.href = file.webContentLink;
-      downloadLink.target = "_blank";
-      downloadLink.rel = "noopener";
-      downloadLink.textContent = "Télécharger";
-      actions.appendChild(downloadLink);
-    }
-
-    body.append(textWrapper, actions);
+    meta.append(folderMeta, dateMeta);
+    body.append(title, meta);
     card.append(thumbWrapper, body);
     fragment.appendChild(card);
   });
 
+  // "Create New Thumbnail" card
+  const newCard = document.createElement("article");
+  newCard.className = "mini-card mini-card-new";
+  newCard.innerHTML = `
+    <a href="mailto:contact@miniads.fr?subject=Nouvelle+miniature">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Nouvelle miniature</span>
+    </a>
+  `;
+  fragment.appendChild(newCard);
+
   targetGrid.appendChild(fragment);
+
+  // Update counter
+  updateThumbCounter(files.length, files.length);
+}
+
+// Thumbnail filter pills
+function updateThumbFilters(visibleFiles, allFiles) {
+  const filtersEl = document.getElementById("thumbFilters");
+  if (!filtersEl) return;
+
+  // Collect unique folder names
+  const folders = [...new Set(allFiles.map(f => f.folderName || "").filter(Boolean))];
+  filtersEl.innerHTML = "";
+
+  const allBtn = document.createElement("button");
+  allBtn.className = "th-filter-pill active";
+  allBtn.dataset.filter = "all";
+  allBtn.textContent = "Tout";
+  filtersEl.appendChild(allBtn);
+
+  folders.forEach(folder => {
+    const btn = document.createElement("button");
+    btn.className = "th-filter-pill";
+    btn.dataset.filter = folder.toLowerCase();
+    btn.textContent = folder;
+    filtersEl.appendChild(btn);
+  });
+
+  // Click handler
+  filtersEl.addEventListener("click", (e) => {
+    const btn = e.target.closest(".th-filter-pill");
+    if (!btn) return;
+    filtersEl.querySelectorAll(".th-filter-pill").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const filter = btn.dataset.filter;
+    const grid = document.getElementById("miniaturesGrid");
+    if (!grid) return;
+
+    let shown = 0;
+    grid.querySelectorAll(".mini-card").forEach(card => {
+      if (card.classList.contains("mini-card-new")) return; // always show
+      const folder = card.dataset.folder || "";
+      const visible = filter === "all" || folder === filter;
+      card.style.display = visible ? "" : "none";
+      if (visible) shown++;
+    });
+
+    updateThumbCounter(shown, allFiles.length);
+  }, { once: false });
+}
+
+function updateThumbCounter(shown, total) {
+  const counter = document.getElementById("thumbCounter");
+  if (counter) {
+    counter.textContent = `${shown} sur ${total} miniatures`;
+  }
 }
 
 function extractVersion(name) {
