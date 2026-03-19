@@ -3770,29 +3770,17 @@ function initYoutubeAnalysis() {
 
       // Top 10 by views
       const top10 = [...allVideos].sort((a, b) => b.views - a.views).slice(0, 10);
-      const ytTopEl = document.getElementById("ytTopTable");
-      if (ytTopEl) ytTopEl.innerHTML = buildTableRows(top10, kpis.avgViews);
+      document.getElementById("ytTopTable").innerHTML = buildTableRows(top10, kpis.avgViews);
 
       // Outliers by ratio
       const withRatio = allVideos.map(v => ({ ...v, ratio: kpis.avgViews > 0 ? v.views / kpis.avgViews : 0 }));
       const outliers = withRatio.sort((a, b) => b.ratio - a.ratio).slice(0, 10);
-      const ytOutEl = document.getElementById("ytOutliersTable");
-      if (ytOutEl) ytOutEl.innerHTML = buildTableRows(outliers, kpis.avgViews);
-
-      // KPI: show video count as trend on avg views
-      const videosLongEl = document.getElementById("statsVideosLong");
-      if (videosLongEl) videosLongEl.textContent = kpis.videoCountLong + " vidéos";
-      // KPI: show median as meta on engagement
-      const medianEl = document.getElementById("statsMedianViews");
-      if (medianEl) medianEl.textContent = "Médiane: " + formatCount(kpis.medianViews) + " vues";
+      document.getElementById("ytOutliersTable").innerHTML = buildTableRows(outliers, kpis.avgViews);
 
       // Charts
       renderBarChart(allVideos);
       setupControls();
       renderTimeSeries(allVideos, currentRange, currentGran, currentMetrics);
-
-      // Top Performing + Needs Attention lists
-      populatePerfVideoLists(allVideos, kpis);
 
       resultsDiv.classList.remove("hidden");
 

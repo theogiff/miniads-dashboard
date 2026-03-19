@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css?v=16" />
+  <link rel="stylesheet" href="./style.css?v=17" />
   <script>
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
@@ -273,52 +273,45 @@
               </div>
             </div>
 
-            <!-- 4 KPIs -->
-            <div class="ov-kpis">
-              <article class="ov-kpi">
-                <span class="ov-kpi-label">Abonnés</span>
-                <div class="ov-kpi-row"><span class="ov-kpi-value" id="statsSubs">-</span></div>
-              </article>
-              <article class="ov-kpi">
-                <span class="ov-kpi-label">Vues totales</span>
-                <div class="ov-kpi-row"><span class="ov-kpi-value" id="statsTotalViews">-</span></div>
-              </article>
-              <article class="ov-kpi">
-                <span class="ov-kpi-label">Vues moyennes</span>
-                <div class="ov-kpi-row">
-                  <span class="ov-kpi-value" id="statsAvgViews">-</span>
-                  <span class="ov-kpi-trend" id="statsVideosLong"></span>
-                </div>
-              </article>
-              <article class="ov-kpi ov-kpi-highlight">
-                <span class="ov-kpi-label">Engagement</span>
-                <div class="ov-kpi-row"><span class="ov-kpi-value" id="statsEngagement">-</span></div>
-                <span class="ov-kpi-meta" id="statsMedianViews"></span>
-              </article>
+            <!-- 6 KPIs -->
+            <div class="ov-kpis" style="grid-template-columns:repeat(3,1fr)">
+              <article class="ov-kpi"><span class="ov-kpi-label">Abonnés</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsSubs">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vidéos (hors shorts)</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsVideosLong">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vues totales</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsTotalViews">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vues moyennes</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsAvgViews">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Engagement</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsEngagement">-</span></div></article>
+              <article class="ov-kpi"><span class="ov-kpi-label">Vues médianes</span><div class="ov-kpi-row"><span class="ov-kpi-value" id="statsMedianViews">-</span></div></article>
             </div>
 
-            <!-- Chart + Insight card -->
-            <div class="perf-two-cols">
-              <div class="ov-card perf-chart-card">
-                <div class="ov-card-header">
-                  <h3>Vues par vidéo</h3>
-                  <div class="perf-controls">
-                    <div class="ov-toggle-group" id="ytRangeGroup">
-                      <button class="ov-toggle-btn" data-range="90">3m</button>
-                      <button class="ov-toggle-btn" data-range="180">6m</button>
-                      <button class="ov-toggle-btn" data-range="365">1a</button>
-                      <button class="ov-toggle-btn active" data-range="0">Tout</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="perf-chart-wrap"><canvas id="ytBarChart"></canvas></div>
+            <!-- Tables: Top 10 + Outliers -->
+            <div class="perf-tables">
+              <div class="ov-card">
+                <div class="ov-card-header"><h3>Top 10 all-time</h3></div>
+                <div class="ov-table-wrap"><table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Durée</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytTopTable"></tbody></table></div>
               </div>
+              <div class="ov-card">
+                <div class="ov-card-header"><h3>Meilleurs outliers</h3></div>
+                <div class="ov-table-wrap"><table class="yt-table"><thead><tr><th>#</th><th>Titre</th><th>Vues</th><th>Likes</th><th>Durée</th><th>Date</th><th>Ratio</th></tr></thead><tbody id="ytOutliersTable"></tbody></table></div>
+              </div>
+            </div>
 
-              <div class="perf-insight-card">
-                <h3>Évolution</h3>
-                <p class="perf-insight-desc">Performance sur la durée.</p>
-                <div class="perf-insight-chart-wrap"><canvas id="ytTimeSeriesChart"></canvas></div>
-                <div class="perf-insight-controls">
+            <!-- Bar Chart -->
+            <div class="ov-card">
+              <div class="ov-card-header"><h3>Vues par vidéo (Top 12)</h3></div>
+              <div class="perf-chart-wrap"><canvas id="ytBarChart"></canvas></div>
+            </div>
+
+            <!-- Time Series Chart -->
+            <div class="ov-card">
+              <div class="ov-card-header">
+                <h3>Évolution temporelle</h3>
+                <div class="perf-controls">
+                  <div class="ov-toggle-group" id="ytRangeGroup">
+                    <button class="ov-toggle-btn" data-range="90">3m</button>
+                    <button class="ov-toggle-btn" data-range="180">6m</button>
+                    <button class="ov-toggle-btn" data-range="365">1a</button>
+                    <button class="ov-toggle-btn active" data-range="0">Tout</button>
+                  </div>
                   <div class="ov-toggle-group" id="ytGranGroup">
                     <button class="ov-toggle-btn" data-gran="day">J</button>
                     <button class="ov-toggle-btn" data-gran="week">S</button>
@@ -331,24 +324,7 @@
                   </div>
                 </div>
               </div>
-            </div>
-
-            <!-- Top Performing + Needs Attention -->
-            <div class="perf-two-cols">
-              <div>
-                <div class="perf-section-header">
-                  <h3>Meilleures vidéos</h3>
-                  <span class="perf-badge-good">Top</span>
-                </div>
-                <div class="perf-video-list" id="perfTopList"></div>
-              </div>
-              <div>
-                <div class="perf-section-header">
-                  <h3>À surveiller</h3>
-                  <span class="perf-badge-warn">Attention</span>
-                </div>
-                <div class="perf-video-list" id="perfBottomList"></div>
-              </div>
+              <div class="perf-chart-wrap"><canvas id="ytTimeSeriesChart"></canvas></div>
             </div>
 
           </div>
