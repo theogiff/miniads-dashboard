@@ -1513,6 +1513,14 @@ let discoveredClients = [];
 let activeAdminView = "dashboard";
 let lastDirectorySync = null;
 let currentClientConfig = null;
+let adminDriveDirectory = [];
+let adminDriveDirectoryLoaded = false;
+let adminDriveDirectoryLoading = false;
+let adminDriveActiveSlug = null;
+const adminDriveCache = new Map();
+const adminMiniaturesClientList = document.getElementById("adminMiniaturesClientList");
+const adminMiniaturesCountEl = document.getElementById("adminMiniaturesCountEl");
+function clearAdminMiniaturesSelection() {}
 const agencyState = {
   rawRows: [],
   normalized: [],
