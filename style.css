@@ -1173,17 +1173,28 @@ body.admin-mode .foot {
   transform: translateY(-2px);
 }
 
+button.ov-work-thumb,
 .ov-work-thumb {
   position: relative;
   aspect-ratio: 16/9;
   background: #f0f0f2;
   overflow: hidden;
+  width: 100%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: block;
 }
 
 .ov-work-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.ov-work-card:hover .ov-work-thumb img {
+  transform: scale(1.03);
 }
 
 .ov-work-thumb-placeholder {

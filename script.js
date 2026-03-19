@@ -629,8 +629,7 @@ function renderRows(rows) {
     lastDate: lastDelivered
   });
 
-  // Populate Overview sections from Airtable rows
-  populateRecentWork(datasetToRender, imageField, titleField, statusField, creatorField);
+  // Populate Overview: Recent Activity from Airtable rows
   populateRecentActivity(datasetToRender, titleField, statusField, creatorField, dateField, requestDateField, creationDateField);
 
   if (summaryBody) {
@@ -808,9 +807,12 @@ async function displayClientMiniatures(slug) {
 
     setMiniaturesView("folders");
 
+    // Populate Overview "Dernières miniatures" with Drive files
+    populateRecentWorkFromDrive(currentFiles);
+
   } catch (e) {
     console.error("Erreur affichage miniatures :", e);
-    miniaturesGrid.innerHTML = "<p>Erreur lors du chargement des miniatures.</p>";
+    if (miniaturesGrid) miniaturesGrid.innerHTML = "<p>Erreur lors du chargement des miniatures.</p>";
   }
 }
 
@@ -3813,97 +3815,53 @@ function populateRecentActivity(rows, titleField, statusField, creatorField, dat
   });
 }
 
-// ===== Overview: Populate Recent Work from Airtable =====
-function extractFirstImageUrl(rawValue) {
-  if (!rawValue) return "";
-  const str = String(rawValue).trim();
-  // Try to find the first http(s) URL in the string
-  const match = str.match(/https?:\/\/[^\s,]+/);
-  return match ? match[0] : "";
-}
-
-function populateRecentWork(rows, imageField, titleField, statusField, creatorField) {
+// ===== Overview: Populate Recent Work from Google Drive =====
+function populateRecentWorkFromDrive(files) {
   const grid = document.getElementById("recentWorkGrid");
-  if (!grid) return;
+  if (!grid || !files || !files.length) return;
 
   const newRequestCard = document.getElementById("newRequestCard");
-
-  // Debug: log what we have
-  if (imageField) {
-    console.log("[RecentWork] imageField:", imageField, "| sample value:", rows[0] ? rows[0][imageField] : "no rows");
-  } else {
-    console.warn("[RecentWork] No imageField detected. All keys:", rows[0] ? Object.keys(rows[0]) : []);
-  }
-
-  // Get rows with images (up to 3)
-  const recentRows = rows.slice(0, 3);
+  const recent = files.slice(0, 3); // Already sorted by date (most recent first)
 
   grid.innerHTML = "";
 
-  recentRows.forEach((r) => {
+  recent.forEach(file => {
     const card = document.createElement("article");
     card.className = "ov-work-card";
 
-    // Try imageField first, then scan all fields for an image URL
-    let imgUrl = "";
-    if (imageField) {
-      imgUrl = extractFirstImageUrl(r[imageField]);
-    }
-    if (!imgUrl) {
-      // Fallback: look for any field with an image URL
-      for (const key of Object.keys(r)) {
-        const val = String(r[key] || "");
-        if (/https?:\/\/.*\.(png|jpe?g|webp|gif)/i.test(val) || /airtableusercontent\.com/i.test(val) || /drive\.google\.com/i.test(val)) {
-          imgUrl = extractFirstImageUrl(val);
-          if (imgUrl) break;
-        }
-      }
-    }
+    const thumbSrc = getMiniatureThumbnail(file.thumbnailLink);
+    const title = truncateText(file.name || "Sans titre");
+    const folder = file.folderName || "";
+    const date = formatDate(file.modifiedTime);
 
-    const title = titleField ? (r[titleField] || "Sans titre") : "Sans titre";
-    const status = statusField ? (r[statusField] || "").trim().toLowerCase() : "";
-    const creator = creatorField ? (r[creatorField] || "") : "";
+    const thumbBtn = document.createElement("button");
+    thumbBtn.type = "button";
+    thumbBtn.className = "ov-work-thumb";
+    thumbBtn.addEventListener("click", () => openMiniaturePip(file));
 
-    // Badge
-    let badgeClass = "ov-badge-live";
-    let badgeText = "LIVE";
-    const norm = status.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    if (norm.includes("draft") || norm.includes("brouillon")) {
-      badgeClass = "ov-badge-draft"; badgeText = "DRAFT";
-    } else if (norm.includes("test") || norm.includes("ab")) {
-      badgeClass = "ov-badge-testing"; badgeText = "A/B TEST";
-    } else if (norm.includes("archiv")) {
-      badgeClass = "ov-badge-archived"; badgeText = "ARCHIVED";
-    } else if (norm.includes("en cours") || norm.includes("progress") || norm.includes("pending")) {
-      badgeClass = "ov-badge-draft"; badgeText = "EN COURS";
-    } else if (norm.includes("livr") || norm.includes("done") || norm.includes("realis") || norm.includes("termin") || norm.includes("complete")) {
-      badgeClass = "ov-badge-live"; badgeText = "LIVE";
-    }
+    const img = document.createElement("img");
+    img.src = thumbSrc;
+    img.alt = file.name || "Miniature";
+    img.loading = "lazy";
+    img.onerror = function() {
+      this.style.display = "none";
+      const ph = document.createElement("div");
+      ph.className = "ov-work-thumb-placeholder";
+      this.parentElement.appendChild(ph);
+    };
+    thumbBtn.appendChild(img);
 
-    // Convert Google Drive link to direct image if possible
-    if (imgUrl.includes("drive.google.com") && imgUrl.includes("/d/")) {
-      const fileIdMatch = imgUrl.match(/\/d\/([^/]+)/);
-      if (fileIdMatch) {
-        imgUrl = `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w600`;
-      }
-    }
-
-    const thumbHtml = imgUrl
-      ? `<img src="${imgUrl}" alt="${title}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div class="ov-work-thumb-placeholder" style="display:none"></div>`
-      : `<div class="ov-work-thumb-placeholder"></div>`;
-
-    card.innerHTML = `
-      <div class="ov-work-thumb">
-        <span class="ov-work-badge ${badgeClass}">${badgeText}</span>
-        ${thumbHtml}
-      </div>
-      <div class="ov-work-info">
-        <span class="ov-work-title">${title}</span>
-        <div class="ov-work-meta">
-          <span>${creator || "—"}</span>
-        </div>
+    const info = document.createElement("div");
+    info.className = "ov-work-info";
+    info.innerHTML = `
+      <span class="ov-work-title" title="${file.name || ""}">${title}</span>
+      <div class="ov-work-meta">
+        <span>${folder}</span>
+        <span>${date}</span>
       </div>
     `;
+
+    card.append(thumbBtn, info);
     grid.appendChild(card);
   });
 
