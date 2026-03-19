@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Miniads — Dashboard Client</title>
-  <link rel="stylesheet" href="./style.css?v=14" />
+  <link rel="stylesheet" href="./style.css?v=15" />
   <script>
     // Renseignez l'ID de l'extension Chrome (chrome://extensions) pour activer le bouton "Voir sur le feed YouTube".
     window.MINIADS_EXTENSION_ID = window.MINIADS_EXTENSION_ID || "ejbbibflgellopbefgnhnpgbcpoamokg";
@@ -42,9 +42,9 @@
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             <span>Performance</span>
           </button>
-          <button type="button" class="sidebar-link" data-client-view="ab-tests">
-            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5.5 6l3-3 3 3"/><path d="M12.5 18l3 3 3-3"/><path d="M3 12h18"/></svg>
-            <span>A/B Tests</span>
+          <button type="button" class="sidebar-link" data-client-view="preview">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m10 9 5 3-5 3V9z"/></svg>
+            <span>Preview</span>
           </button>
           <button type="button" class="sidebar-link" data-client-view="files">
             <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -230,6 +230,25 @@
               </div>
               <div id="miniaturesFolderList" class="miniatures-folder-list"></div>
             </div>
+          </div>
+        </section>
+
+        <!-- ===== PREVIEW ===== -->
+        <section class="client-view" id="clientPreviewView" data-client-view="preview">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Preview</h2>
+              <p class="page-desc">Visualise ta miniature directement dans un feed YouTube réaliste.</p>
+            </div>
+            <div class="page-header-actions">
+              <a class="btn-outline" href="./miniads-claude/preview.html" target="_blank" rel="noopener">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Ouvrir en plein écran
+              </a>
+            </div>
+          </div>
+          <div class="preview-embed">
+            <iframe src="./miniads-claude/preview.html" id="previewFrame" title="Miniads YouTube Preview" loading="lazy"></iframe>
           </div>
         </section>
 
