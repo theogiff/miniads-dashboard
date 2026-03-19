@@ -27,6 +27,29 @@ function median(arr) {
     return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
+// Rotation de clés API pour gérer le quota
+const API_KEYS = [
+    process.env.YOUTUBE_API_KEY,
+    process.env.YOUTUBE_API_KEY_2,
+    process.env.YOUTUBE_API_KEY_3,
+    process.env.YOUTUBE_API_KEY_4,
+].filter(Boolean);
+
+async function tryWithKeys(fn) {
+    for (let i = 0; i < API_KEYS.length; i++) {
+        try {
+            return await fn(API_KEYS[i]);
+        } catch (e) {
+            const isQuota = e.message?.includes("quota") || e.code === 403 || e.status === 403;
+            if (isQuota && i < API_KEYS.length - 1) {
+                console.warn(`Clé API #${i + 1} quota dépassé, passage à la suivante...`);
+                continue;
+            }
+            throw e;
+        }
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -35,6 +58,8 @@ export default async function handler(req, res) {
     try {
         const { url } = req.body;
         if (!url) return res.status(400).json({ error: "URL requise" });
+
+        const result = await tryWithKeys(async (apiKey) => {
 
         let channelId = null;
         const u = new URL(url);
@@ -46,7 +71,7 @@ export default async function handler(req, res) {
 
         const youtube = google.youtube({
             version: "v3",
-            auth: process.env.YOUTUBE_API_KEY,
+            auth: apiKey,
         });
 
         if (!channelId) {
@@ -138,7 +163,7 @@ export default async function handler(req, res) {
             ? parseFloat((longVideos.reduce((s, v) => s + v.engagementRate, 0) / longVideos.length).toFixed(2))
             : 0;
 
-        res.status(200).json({
+        return {
             channel: {
                 title: snippet.title,
                 description: snippet.description,
@@ -168,7 +193,11 @@ export default async function handler(req, res) {
                 durationSeconds: v.durationSeconds,
                 durationFormatted: v.durationFormatted,
             })),
-        });
+        };
+
+        }); // fin tryWithKeys
+
+        res.status(200).json(result);
 
     } catch (e) {
         console.error("Erreur API YouTube:", e.message);
