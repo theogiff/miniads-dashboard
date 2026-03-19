@@ -23,8 +23,8 @@ if (typeof chrome === 'undefined' || !chrome.storage) {
   };
 }
 
-// Configuration de la clé API YouTube
-const YOUTUBE_API_KEY = 'AIzaSyDekxhLAwMVLC56TRRIWPZ-gHdfprd4Ftk';
+// YouTube API key is proxied through the server — no client-side key
+const YOUTUBE_API_KEY = '';
 const incomingParams = getIncomingParams();
 const DEFAULT_TITLE = 'Votre titre de vidéo';
 const DEFAULT_CHANNEL = 'Votre chaîne YouTube';
@@ -438,7 +438,7 @@ function showThumbnail(data) {
 async function searchChannelsInModal(query, resultsContainer, onSelect) {
   try {
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=10&key=${YOUTUBE_API_KEY}`
+      `/api/youtube/proxy?endpoint=search&part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=10`
     );
     
     if (!response.ok) {
@@ -465,7 +465,7 @@ async function searchChannelsInModal(query, resultsContainer, onSelect) {
     
     const channelIds = data.items.map(item => item.snippet.channelId).join(',');
     const statsResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelIds}&key=${YOUTUBE_API_KEY}`
+      `/api/youtube/proxy?endpoint=channels&part=statistics&id=${channelIds}`
     );
     
     const statsData = await statsResponse.json();
@@ -667,7 +667,7 @@ function refreshPreview() {
 
 async function fetchVideosForChannel(channelId) {
   const searchResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=50&key=${YOUTUBE_API_KEY}&rnd=${Math.random()}`
+    `/api/youtube/proxy?endpoint=search&part=snippet&channelId=${channelId}&order=date&type=video&maxResults=50&rnd=${Math.random()}`
   );
 
   if (!searchResponse.ok) {
@@ -680,7 +680,7 @@ async function fetchVideosForChannel(channelId) {
   if (!videoIds) return [];
 
   const detailsResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}&rnd=${Math.random()}`
+    `/api/youtube/proxy?endpoint=videos&part=snippet,contentDetails,statistics&id=${videoIds}&rnd=${Math.random()}`
   );
 
   if (!detailsResponse.ok) {
@@ -705,7 +705,7 @@ async function fetchYouTubeVideos() {
       return aggregated;
     }
 
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=FR&maxResults=50&key=${YOUTUBE_API_KEY}&rnd=${Math.random()}`;
+    const url = `/api/youtube/proxy?endpoint=videos&part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=FR&maxResults=50&rnd=${Math.random()}`;
     const response = await fetch(url);
     
     if (!response.ok) {

@@ -4,7 +4,24 @@ import crypto from "node:crypto";
 import { google } from "googleapis";
 
 const app = express();
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  process.env.ALLOWED_ORIGIN || null,
+  "http://localhost:3000",
+  "http://localhost:5173"
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow requests with no origin (server-to-server, mobile apps)
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed) || origin.includes("miniads"))) {
+      return cb(null, true);
+    }
+    cb(new Error("CORS non autorisé"), false);
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve static files from the parent directory (frontend)
@@ -72,7 +89,10 @@ const extractClientNameFromFolder = (folderName = "") => {
 // --- Admin session helpers ---
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET;
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "";
+if (!ADMIN_SESSION_SECRET && process.env.NODE_ENV === "production") {
+  console.error("CRITICAL: ADMIN_SESSION_SECRET is not set in production!");
+}
 const ADMIN_SESSION_COOKIE = "admin_session";
 const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
@@ -234,6 +254,13 @@ const isAdminRequest = (req) => {
 };
 
 // --- Airtable proxy ---
+// Allowed base/table combinations to prevent arbitrary Airtable access
+const ALLOWED_AIRTABLE_TABLES = new Set([
+  "tblnA0z8ooGAZYXIp", // Suivi miniatures
+  "tbldaOp2rbjxKuLsr", // Packs
+  "tblwTQ6JgbVv1Krj8"  // Clients
+]);
+
 app.post("/api/airtable/query", async (req, res) => {
   try {
     if (!AIRTABLE_API_KEY) {
@@ -242,6 +269,10 @@ app.post("/api/airtable/query", async (req, res) => {
     const { baseId, tableId, view, filterByFormula, fields, pageSize = 100, maxRecords } = req.body || {};
     if (!baseId || !tableId) {
       return res.status(400).json({ error: "baseId et tableId requis" });
+    }
+    // Validate allowed tables
+    if (!ALLOWED_AIRTABLE_TABLES.has(String(tableId).trim())) {
+      return res.status(403).json({ error: "Table non autorisée." });
     }
 
     const safeBase = encodeURIComponent(String(baseId).trim());
@@ -433,6 +464,35 @@ app.get("/api/client/bySlug/:slug", async (req, res) => {
     res
       .status(500)
       .json({ error: "Erreur lors de la récupération des miniatures." });
+  }
+});
+
+// --- YouTube API proxy (for preview.js — no client-side key) ---
+const YT_API_KEY = process.env.YOUTUBE_API_KEY;
+
+app.get("/api/youtube/proxy", async (req, res) => {
+  try {
+    if (!YT_API_KEY) return res.status(500).json({ error: "YouTube API key non configurée." });
+
+    const endpoint = req.query.endpoint; // "search" or "videos" or "channels"
+    const allowed = ["search", "videos", "channels"];
+    if (!endpoint || !allowed.includes(endpoint)) {
+      return res.status(400).json({ error: "Endpoint non autorisé." });
+    }
+
+    // Forward all query params except endpoint and key
+    const params = new URLSearchParams(req.query);
+    params.delete("endpoint");
+    params.set("key", YT_API_KEY);
+
+    const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/${endpoint}?${params.toString()}`);
+    const data = await ytRes.json();
+
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.status(ytRes.status).json(data);
+  } catch (e) {
+    console.error("YouTube proxy error:", e.message);
+    res.status(500).json({ error: "Erreur proxy YouTube." });
   }
 });
 
