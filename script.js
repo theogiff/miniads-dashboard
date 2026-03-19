@@ -3761,12 +3761,14 @@ function initYoutubeAnalysis() {
 
       // Top 10 by views
       const top10 = [...allVideos].sort((a, b) => b.views - a.views).slice(0, 10);
-      document.getElementById("ytTopTable").innerHTML = buildTableRows(top10, kpis.avgViews);
+      const ytTopEl = document.getElementById("ytTopTable");
+      if (ytTopEl) ytTopEl.innerHTML = buildTableRows(top10, kpis.avgViews);
 
       // Outliers by ratio
       const withRatio = allVideos.map(v => ({ ...v, ratio: kpis.avgViews > 0 ? v.views / kpis.avgViews : 0 }));
       const outliers = withRatio.sort((a, b) => b.ratio - a.ratio).slice(0, 10);
-      document.getElementById("ytOutliersTable").innerHTML = buildTableRows(outliers, kpis.avgViews);
+      const ytOutEl = document.getElementById("ytOutliersTable");
+      if (ytOutEl) ytOutEl.innerHTML = buildTableRows(outliers, kpis.avgViews);
 
       // KPI: show video count as trend on avg views
       const videosLongEl = document.getElementById("statsVideosLong");
