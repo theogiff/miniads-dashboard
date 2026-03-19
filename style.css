@@ -339,7 +339,7 @@ body.admin-mode .foot {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 20px 32px 80px;
+  padding: 28px 48px 80px;
   overflow-y: auto;
 }
 
@@ -599,8 +599,8 @@ body.admin-mode .foot {
 .client-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  padding: 4px 6px 80px;
+  gap: 28px;
+  padding: 8px 0 80px;
 }
 
 .client-view {
@@ -1312,7 +1312,7 @@ button.ov-work-thumb,
 @media (max-width: 1000px) {
   .ov-kpis { grid-template-columns: repeat(2, 1fr); }
   .ov-recent-work-grid { grid-template-columns: repeat(2, 1fr); }
-  .main-wrap { padding: 16px 20px 60px; }
+  .main-wrap { padding: 20px 28px 60px; }
 }
 
 @media (max-width: 768px) {
